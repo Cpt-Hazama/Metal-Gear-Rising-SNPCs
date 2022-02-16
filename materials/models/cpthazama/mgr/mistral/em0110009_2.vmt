@@ -1,0 +1,15 @@
+"VertexlitGeneric"
+{
+    "$basetexture"              "models/cpthazama/mgr/mistral/em0110009"
+    "$bumpmap"                  "models/cpthazama/mgr/mistral/em0110009_n"
+    "$phongexponenttexture"     "vj_base/exponent"
+
+    "$nodecal"                  "1"
+    "$translucent"              "1"
+
+    "$ambientocclusion"         "0.7"
+    "$phong"                    "1"
+    "$phongboost"               "50"
+    "$phongfresnelranges"       "[0.87 0.9 1]"
+    "$phongalbedotint"          "1"
+}

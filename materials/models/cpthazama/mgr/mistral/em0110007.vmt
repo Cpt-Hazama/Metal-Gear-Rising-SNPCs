@@ -1,0 +1,24 @@
+"VertexLitGeneric"
+{
+    "$basetexture"              "models/cpthazama/mgr/mistral/em0110007"
+    "$bumpmap"                  "models/cpthazama/mgr/flat"
+    "$phongexponenttexture"     "vj_base/exponent"
+    "$color2"                   "[0 0 0]"
+
+    "$nodecal"                  "1"
+
+    "$phong"                    "1"
+    "$phongboost"               "40"
+    "$phongfresnelranges"       "[0.05 0.115 0.945]"
+    "$phongdisablehalflambert"  "1"
+    "$phongalbedotint"          "1"
+
+    "$envmap"                   "models/cpthazama/mgr/fallout4_dithered_grey"
+    "$envmapfresnel"            "1"
+    "$envmaptint"               "[0.2 0.2 0.2]"
+
+    "$normalmapalphaenvmapmask" "1"
+    "$blendtintbybasealpha"     "1"
+
+    "$lightwarptexture"				"models/cpthazama/mgr/warp2"
+}

@@ -1,0 +1,6 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "nodraw"
+	"$alphatest" 1
+	"$nodecal" 1
+}

@@ -140,22 +140,16 @@ ENT.SoundTbl_Pain = {
 	"cpthazama/mgr/mistral/314524779.wav",
 	"cpthazama/mgr/mistral/510297394.wav",
 }
----------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:CustomOnMeleeAttack_AfterStartTimer(seed)
-	if math.random(1,5) == 1 then
-		local snd = VJ_PICK(self.SoundTbl_Attack)
-		local dur = SoundDuration(snd)
 
-		self:StopAllCommonSpeechSounds()
-		self.NextAlertSoundT = CurTime() +dur +math.Rand(1,2)
-		self.NextInvestigateSoundT = CurTime() +dur +math.Rand(3,4)
-		self.NextIdleSoundT_RegularChange = CurTime()  +dur +math.Rand(3,4)
-		VJ_CreateSound(self,snd,78)
-	end
-end
+ENT.ComboStrings = {}
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnInitialize()
 	self.IsStunned = false
+	self.CurrentStringTable = {}
+	self.StringCount = 0
+	self.CurrentStringNum = 0
+	self.CurrentStringAnim = nil
+	self.Attacking = false
 
 	self:SetWeapon(true)
 	self:SetPhase(1)
@@ -163,41 +157,94 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetPhase(i)
 	if i == 1 then
-		self.AnimTbl_MeleeAttack = {
-			"attack1",	
-			"attack2",
-			"attack3",
-			"attack4",
-			"attack5",
-			"attack6",
-			"attack7",
-			"attack8",
-			"attack12",
-			"attack13",
-			"attack15",
-			"attack16",
+		self.ComboStrings = {
+			{
+				"attack1",
+				"attack2",
+				"attack3",
+			},
+			{
+				"attack5",
+				"attack2",
+			},
+			{
+				"attack1",
+				"attack2",
+				"attack6",
+			},
+			{
+				"attack6",
+				"attack7",
+			},
+			{
+				"attack6",
+				"attack8",
+			},
+			{
+				"attack16",
+				"attack15",
+				"attack12",
+			},
 		}
 		
 		self:SetBodygroup(1,0)
 	elseif i == 2 then
 		VJ_CreateSound(self,self.SoundTbl_PhaseShift,80)
-		self.AnimTbl_MeleeAttack = {
-			"attack1",
-			"attack2",
-			"attack3",
-			"attack4",
-			"attack5",
-			"attack6",
-			"attack7",
-			"attack8",
-			"attack9",
-			"attack10",
-			"attack11",
-			"attack12",
-			"attack13",
-			"attack14",
-			"attack15",
-			"attack16",
+/*
+				"attack1",
+				"attack2",
+				"attack3",
+				"attack4",
+				"attack5",
+				"attack6",
+				"attack7",
+				"attack8",
+				"attack9",
+				"attack10",
+				"attack11",
+				"attack12",
+				"attack13",
+				"attack14",
+				"attack15",
+				"attack16",
+*/
+		self.ComboStrings = {
+			{
+				"attack1",
+				"attack2",
+				"attack3",
+			},
+			{
+				"attack5",
+				"attack2",
+			},
+			{
+				"attack1",
+				"attack2",
+				"attack6",
+			},
+			{
+				"attack6",
+				"attack7",
+			},
+			{
+				"attack6",
+				"attack8",
+			},
+			{
+				"attack16",
+				"attack15",
+				"attack12",
+			},
+			{
+				"attack9",
+			},
+			{
+				"attack10",
+			},
+			{
+				"attack11",
+			},
 		}
 		
 		self:SetBodygroup(1,1)
@@ -226,7 +273,7 @@ function ENT:SetWeapon(b)
 
 		self.AnimTbl_Run = {ACT_RUN}
 	end
-	self.HasMeleeAttack = b
+	self.CanMeleeAttack = b
 	self.ConstantlyFaceEnemy = b
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -329,6 +376,17 @@ function ENT:CustomOnAcceptInput(key,activator,caller,data)
 		self:StartDamageCalc(math.random(60,70))
 	elseif key == "dmg_end" then
 		self:EndDamageCalc()
+	elseif key == "combo_end" then
+		self:CheckCanContinueString()
+		-- local ent = self:GetEnemy()
+		-- local dist = self.NearestPointToEnemyDistance
+		-- local cont = self.VJ_TheController
+		-- local key_atk = IsValid(cont) && cont:KeyDown(IN_ATTACK)
+		-- local isAI = (!IsValid(cont) && IsValid(ent))
+		-- if isAI or (IsValid(cont) && key_atk) then
+		-- 	if isAI && dist > self.MeleeAttackDistance then return end
+		-- 	self:DoNextAttack(self.LastSequence)
+		-- end
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -379,8 +437,13 @@ function ENT:CustomOnThink()
 		self:Dodge(dTbl)
 	end
 
-	if IsValid(ent) && self:GetAttackNames(ent) && dist <= 350 && !self:IsBusy() && math.random(1,4) == 1 then
-		self:Dodge()
+	if IsValid(ent) && !self:IsBusy() then
+		if key_atk or !IsValid(cont) && dist <= self.MeleeAttackDistance && !self.Attacking && self:CheckCanSee(ent,55) then
+			self:Attack()
+		end
+		if self:GetAttackNames(ent) && dist <= 350 && math.random(1,4) == 1 then
+			self:Dodge()
+		end
 	end
 
 	if !self:IsBusy() && self.LastActivity == ACT_WALK && (!IsValid(cont) && self.GoalTime <= 1.2 && self.GoalTime > 0.2 or IsValid(cont) && !isMoving) && self.LastSequence != "walk_to_idle" then
@@ -468,7 +531,10 @@ end
 function ENT:CustomOnTakeDamage_OnBleed(dmginfo, hitgroup)
 	if self:Health() <= self:GetMaxHealth() *0.5 && self.Phase == 1 then
 		self:SetPhase(2)
+		self:SetState(VJ_STATE_NONE)
+		self:Stun()
 		self:SetHealth(self:GetMaxHealth() *0.5)
+		return
 	end
 
 	local dmg = dmginfo:GetDamage()
@@ -478,4 +544,61 @@ function ENT:CustomOnTakeDamage_OnBleed(dmginfo, hitgroup)
 	if dmg >= 95 && !isBSDamage && self:GetState() == VJ_STATE_NONE && math.random(1,4) == 1 then
 		self:Stun()
 	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Attack()
+	if !self.CanMeleeAttack then return end
+	if self.Attacking then return end
+	if self:IsBusy() then return end
+	for k,v in RandomPairs(self.ComboStrings) do
+		self:PlayString(true,v)
+		break
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:PlayString(init,tbl)
+	self.Attacking = true
+	if init then
+		self.CurrentStringTable = tbl
+		self.StringCount = #tbl
+		self.CurrentStringNum = 1
+	else
+		self.CurrentStringNum = self.CurrentStringNum +1
+	end
+	self.CurrentStringAnim = tbl[self.CurrentStringNum]
+	self:VJ_ACT_PLAYACTIVITY(self.CurrentStringAnim,true,false,false)
+	if self.CurrentStringNum == self.StringCount then
+		self.Attacking = false
+	end
+	if math.random(1,6) == 1 then
+		local snd = VJ_PICK(self.SoundTbl_Attack)
+		local dur = SoundDuration(snd)
+
+		self:StopAllCommonSpeechSounds()
+		self.NextAlertSoundT = CurTime() +dur +math.Rand(1,2)
+		self.NextInvestigateSoundT = CurTime() +dur +math.Rand(3,4)
+		self.NextIdleSoundT_RegularChange = CurTime()  +dur +math.Rand(3,4)
+		VJ_CreateSound(self,snd,78)
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CheckContinueString()
+	if self.CurrentStringNum +1 <= self.StringCount then
+		self.vACT_StopAttacks = false
+		self:PlayString(false,self.CurrentStringTable)
+	else
+		self.Attacking = false
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CheckCanContinueString()
+	if (self.VJ_IsBeingControlled && self.VJ_TheController:KeyDown(IN_ATTACK)) or !self.VJ_IsBeingControlled && IsValid(self:GetEnemy()) && self:GetEnemy():GetPos():Distance(self:GetPos()) <= 240 && self:CheckCanSee(self:GetEnemy(),55) then
+		self:CheckContinueString()
+	else
+		self.Attacking = false
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CheckCanSee(ent,cone)
+	return (self:GetSightDirection():Dot((ent:GetPos() -self:GetPos()):GetNormalized()) > math.cos(math.rad(cone)))
 end

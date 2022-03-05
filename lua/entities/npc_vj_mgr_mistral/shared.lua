@@ -74,6 +74,8 @@ if CLIENT then
         end
 
         local hookName = "VJ_MGR_Mistral_" .. self:EntIndex()
+        VJ_MGR_HPBar(self)
+
         hook.Add("Think",hookName,function()
             local ply = LocalPlayer()
             if !IsValid(self) then
@@ -90,12 +92,22 @@ if CLIENT then
             end
 
             local phase = self:GetNW2Int("Phase")
+            local startPoint = 20.65
+            local endPoint = 128.15
             ply.VJ_MGR_CurrentTrack = phase
             local track1 = ply.VJ_MGR_CurrentTrackChannelP1
             local track2 = ply.VJ_MGR_CurrentTrackChannelP2
             if !IsValid(track1) or !IsValid(track2) then
                 self:CreateTracks(ply)
                 return
+            end
+            local time1 = track1:GetTime()
+            local time2 = track2:GetTime()
+            if time1 >= endPoint then
+                track1:SetTime(startPoint)
+            end
+            if time2 >= endPoint then
+                track2:SetTime(startPoint)
             end
             if phase == 2 then
                 local vol1 = track1:GetVolume()

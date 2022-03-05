@@ -151,6 +151,11 @@ function ENT:CustomOnInitialize()
 	self.CurrentStringAnim = nil
 	self.Attacking = false
 
+	if self.IsLimited then
+		self:SetBodygroup(1,1)
+		self:SetBodygroup(4,1)
+	end
+
 	self:SetWeapon(true)
 	self:SetPhase(1)
 end
@@ -187,7 +192,7 @@ function ENT:SetPhase(i)
 			},
 		}
 		
-		self:SetBodygroup(1,0)
+		self:SetBodygroup(2,0)
 	elseif i == 2 then
 		VJ_CreateSound(self,self.SoundTbl_PhaseShift,80)
 /*
@@ -247,7 +252,7 @@ function ENT:SetPhase(i)
 			},
 		}
 		
-		self:SetBodygroup(1,1)
+		self:SetBodygroup(2,1)
 	end
 	self.Phase = i
 	self:SetNW2Int("Phase",i)
@@ -267,7 +272,7 @@ function ENT:SetWeapon(b)
 		self:SetNW2Entity("Weapon",wep)
 		self.Weapon = wep
 
-		self.AnimTbl_Run = {ACT_WALK}
+		self.AnimTbl_Run = {ACT_RUN_STIMULATED}
 	else
 		SafeRemoveEntity(self.Weapon)
 
@@ -357,6 +362,7 @@ function ENT:DealDamage(dmg,ent,tr)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnAcceptInput(key,activator,caller,data)
+	print(key)
 	if key == "step" then
 		VJ_EmitSound(self,self.SoundTbl_FootStep,75,math.random(90,110))
 	elseif key == "pre_spin" then
@@ -422,6 +428,8 @@ function ENT:CustomOnThink()
 	local key_rig = IsValid(cont) && cont:KeyDown(IN_MOVERIGHT)
 	local key_jum = IsValid(cont) && cont:KeyDown(IN_JUMP)
 	local isMoving = (key_for || key_bac || key_lef || key_rig)
+
+	self:SetNW2Int("HP",self:Health())
 
 	self.CanFlinch = self:GetState() != VJ_STATE_NONE && 0 or 1
 
@@ -594,8 +602,10 @@ end
 function ENT:CheckCanContinueString()
 	if (self.VJ_IsBeingControlled && self.VJ_TheController:KeyDown(IN_ATTACK)) or !self.VJ_IsBeingControlled && IsValid(self:GetEnemy()) && self:GetEnemy():GetPos():Distance(self:GetPos()) <= 240 && self:CheckCanSee(self:GetEnemy(),55) then
 		self:CheckContinueString()
+		print("CONITNUE")
 	else
 		self.Attacking = false
+		print("STOP")
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------

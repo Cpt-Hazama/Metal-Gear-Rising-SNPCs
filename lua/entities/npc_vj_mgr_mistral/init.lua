@@ -362,7 +362,6 @@ function ENT:DealDamage(dmg,ent,tr)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnAcceptInput(key,activator,caller,data)
-	print(key)
 	if key == "step" then
 		VJ_EmitSound(self,self.SoundTbl_FootStep,75,math.random(90,110))
 	elseif key == "pre_spin" then
@@ -384,15 +383,6 @@ function ENT:CustomOnAcceptInput(key,activator,caller,data)
 		self:EndDamageCalc()
 	elseif key == "combo_end" then
 		self:CheckCanContinueString()
-		-- local ent = self:GetEnemy()
-		-- local dist = self.NearestPointToEnemyDistance
-		-- local cont = self.VJ_TheController
-		-- local key_atk = IsValid(cont) && cont:KeyDown(IN_ATTACK)
-		-- local isAI = (!IsValid(cont) && IsValid(ent))
-		-- if isAI or (IsValid(cont) && key_atk) then
-		-- 	if isAI && dist > self.MeleeAttackDistance then return end
-		-- 	self:DoNextAttack(self.LastSequence)
-		-- end
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -494,6 +484,7 @@ function ENT:Dodge(forceSide)
 	local snd = VJ_PICK(self.SoundTbl_Dodge)
 	local dur = SoundDuration(snd)
 
+	self.Attacking = false
 	self:StopAllCommonSpeechSounds()
 	self.NextAlertSoundT = CurTime() +dur +math.Rand(1,2)
 	self.NextInvestigateSoundT = CurTime() +dur +math.Rand(3,4)
@@ -509,6 +500,7 @@ function ENT:Stun()
 	self:SetVelocity(Vector(0,0,0))
 	self.NextIdleSoundT = CurTime() +math.Rand(self.NextSoundTime_Idle.a, self.NextSoundTime_Idle.b) *1.5
 	self:SetState(VJ_STATE_ONLY_ANIMATION_NOATTACK)
+	self.Attacking = false
 	self.IsStunned = true
 	if self.OnStunned then
 		self:OnStunned()
@@ -552,6 +544,10 @@ function ENT:CustomOnTakeDamage_OnBleed(dmginfo, hitgroup)
 	if dmg >= 95 && !isBSDamage && self:GetState() == VJ_STATE_NONE && math.random(1,4) == 1 then
 		self:Stun()
 	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CustomOnFlinch_AfterFlinch(dmginfo, hitgroup)
+	self.Attacking = false
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Attack()
@@ -602,10 +598,8 @@ end
 function ENT:CheckCanContinueString()
 	if (self.VJ_IsBeingControlled && self.VJ_TheController:KeyDown(IN_ATTACK)) or !self.VJ_IsBeingControlled && IsValid(self:GetEnemy()) && self:GetEnemy():GetPos():Distance(self:GetPos()) <= 240 && self:CheckCanSee(self:GetEnemy(),55) then
 		self:CheckContinueString()
-		print("CONITNUE")
 	else
 		self.Attacking = false
-		print("STOP")
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------

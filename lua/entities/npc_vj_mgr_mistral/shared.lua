@@ -36,6 +36,7 @@ if CLIENT then
     function ENT:CreateTracks(ply)        
         self:CreateAudioStream(ply,"cpthazama/mgr/music/mistral_phase1.mp3",1)
         self:CreateAudioStream(ply,"cpthazama/mgr/music/mistral_phase2.mp3",2)
+        ply.VJ_MGR_StartedTracks = true
     end
 
 	function ENT:OnCreatedAudioStream(channel,ply,trkID)
@@ -79,6 +80,7 @@ if CLIENT then
         hook.Add("Think",hookName,function()
             local ply = LocalPlayer()
             if !IsValid(self) then
+                ply.VJ_MGR_StartedTracks = false
                 if ply.VJ_MGR_CurrentTrackChannelP1 then
                     ply.VJ_MGR_CurrentTrackChannelP1:Stop()
                     ply.VJ_MGR_CurrentTrackChannelP1 = nil
@@ -97,10 +99,11 @@ if CLIENT then
             ply.VJ_MGR_CurrentTrack = phase
             local track1 = ply.VJ_MGR_CurrentTrackChannelP1
             local track2 = ply.VJ_MGR_CurrentTrackChannelP2
-            if !IsValid(track1) or !IsValid(track2) then
+            if !ply.VJ_MGR_StartedTracks then
                 self:CreateTracks(ply)
                 return
             end
+            if track1 == nil or track2 == nil then return end
             local time1 = track1:GetTime()
             local time2 = track2:GetTime()
             if time1 >= endPoint then

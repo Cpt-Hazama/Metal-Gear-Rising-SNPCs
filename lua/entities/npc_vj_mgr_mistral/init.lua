@@ -190,29 +190,16 @@ function ENT:SetPhase(i)
 				"attack15",
 				"attack12",
 			},
+			{
+				function(self)
+					self:AttackUnique(13)
+				end
+			},
 		}
 		
 		self:SetBodygroup(2,0)
 	elseif i == 2 then
 		VJ_CreateSound(self,self.SoundTbl_PhaseShift,80)
-/*
-				"attack1",
-				"attack2",
-				"attack3",
-				"attack4",
-				"attack5",
-				"attack6",
-				"attack7",
-				"attack8",
-				"attack9",
-				"attack10",
-				"attack11",
-				"attack12",
-				"attack13",
-				"attack14",
-				"attack15",
-				"attack16",
-*/
 		self.ComboStrings = {
 			{
 				"attack1",
@@ -249,6 +236,11 @@ function ENT:SetPhase(i)
 			},
 			{
 				"attack11",
+			},
+			{
+				function(self)
+					self:AttackUnique(13)
+				end
 			},
 		}
 		
@@ -505,6 +497,26 @@ function ENT:Dodge(forceSide)
 	VJ_CreateSound(self,snd,78)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Block(dmginfo)
+	if self.Attacking or self:GetState() != VJ_STATE_NONE then return end
+	-- if self:IsBusy() then return end
+
+	self:VJ_ACT_PLAYACTIVITY("block_hit",true,false,true)
+
+	local dmg = dmginfo:GetDamage()
+	dmginfo:SetDamage(math.Clamp(dmg *0.05,1,dmg))
+
+	local snd = VJ_PICK(self.SoundTbl_Block)
+	local dur = SoundDuration(snd)
+
+	self.Attacking = false
+	self:StopAllCommonSpeechSounds()
+	self.NextAlertSoundT = CurTime() +dur +math.Rand(1,2)
+	self.NextInvestigateSoundT = CurTime() +dur +math.Rand(3,4)
+	self.NextIdleSoundT_RegularChange = CurTime()  +dur +math.Rand(3,4)
+	VJ_CreateSound(self,snd,78)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Stun()
 	if self:GetState() != VJ_STATE_NONE then return end
 	if self.IsStunned then return end
@@ -531,13 +543,45 @@ function ENT:Stun()
 	end})
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:AttackUnique(atk)
+	self.Attacking = true
+	if atk == 13 then
+		self:VJ_ACT_PLAYACTIVITY("attack13_pre",true,false,true,0,{OnFinish=function(interrupted,anim)
+			if interrupted then
+				return
+			end
+			local animDur = VJ_GetSequenceDuration(self,"attack13")
+			local maxSpins = 6
+			for i = 0,maxSpins do
+				timer.Simple(i *animDur,function()
+					if IsValid(self) && IsValid(self:GetEnemy()) then
+						if self:GetState() != VJ_STATE_NONE or self.IsStunned then return end
+						self:SetAngles(Angle(0,(self:GetEnemy():GetPos() -self:GetPos()):Angle().y,0))
+						self:VJ_ACT_PLAYACTIVITY("attack13",true,false,false,0,{OnFinish=function(interrupted,anim)
+							if i == maxSpins then
+								self.Attacking = false
+							end
+						end})
+						self:SetVelocity(self:GetMoveVelocity() *2.25)
+					end
+				end)
+			end
+		end})
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnTakeDamage_BeforeImmuneChecks(dmginfo, hitgroup)
 	local dmg = dmginfo:GetDamage()
 	local dmgtype = dmginfo:GetDamageType()
 	local isBSDamage = (dmgtype == DMG_BULLET or dmgtype == DMG_DIRECT)
 
-	if math.random(1,6) == 1 && !self:IsBusy() && !isBSDamage then
-		self:Dodge()
+	if !isBSDamage && math.random(1,3) == 1 then
+		local randPick = math.random(1,10)
+		if randPick >= 7 then
+			self:Dodge()
+		else
+			self:Block(dmginfo)
+		end
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -574,6 +618,10 @@ function ENT:Attack()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:PlayString(init,tbl)
+	if !isstring(tbl[1]) then
+		tbl[1](self)
+		return
+	end
 	self.Attacking = true
 	if init then
 		self.CurrentStringTable = tbl

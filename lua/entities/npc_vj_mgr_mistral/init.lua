@@ -354,7 +354,7 @@ end
 function ENT:DealDamage(dmg,ent,tr)
 	local dmginfo = DamageInfo()
 	dmginfo:SetDamage(dmg or 1)
-	dmginfo:SetDamagePosition(tr.HitPos)
+	dmginfo:SetDamagePosition(istable(tr) && tr.HitPos or tr)
 	dmginfo:SetDamageType(DMG_SLASH)
 	dmginfo:SetAttacker(self)
 	dmginfo:SetInflictor(self)
@@ -375,7 +375,20 @@ function ENT:CustomOnAcceptInput(key,activator,caller,data)
 		self.SavePos = pos
 	elseif key == "dodge_sendpos" then
 		self:SetPos(self.SavePos)
+	elseif key == "melee" then
+		local myPos = self:GetPos()
+		local hitRegistered = false
+		for _,v in pairs(ents.FindInSphere(self:SetMeleeAttackDamagePosition(), 165)) do
+			if (self.VJ_IsBeingControlled == true && self.VJ_TheControllerBullseye == v) or (v:IsPlayer() && v.IsControlingNPC == true) then continue end -- If controlled and v is the bullseye OR it's a player controlling then don't damage!
+			if v != self && v:GetClass() != self:GetClass() && (((v:IsNPC() or (v:IsPlayer() && v:Alive() && GetConVar("ai_ignoreplayers"):GetInt() == 0)) && self:Disposition(v) != D_LI) or v:GetClass() == "func_breakable_surf" or self.EntitiesToDestroyClass[v:GetClass()] or v.VJ_AddEntityToSNPCAttackList == true) && self:GetSightDirection():Dot((Vector(v:GetPos().x, v:GetPos().y, 0) - Vector(myPos.x, myPos.y, 0)):GetNormalized()) > math.cos(math.rad(self.MeleeAttackDamageAngleRadius)) then
+				if self:VJ_GetNearestPointToEntityDistance(v) > self.MeleeAttackDistance then continue end //if (self:GetPos():Distance(v:GetPos()) <= self:VJ_GetNearestPointToEntityDistance(v) && self:VJ_GetNearestPointToEntityDistance(v) <= self.MeleeAttackDistance) == false then
+				self:DealDamage(10,v,v:GetPos() +v:OBBCenter())
+			end
+		end
 	elseif key == "dmg_start" then
+		if IsValid(self:GetEnemy()) then
+			self:FaceCertainEntity(self:GetEnemy(), true)
+		end
 		self:StartDamageCalc(math.random(50,60))
 	elseif key == "dmg_whip_start" then
 		self:StartDamageCalc(math.random(60,70))

@@ -25,6 +25,108 @@ if VJExists == true then
 			size = 50,
 		})
 
+		function VJ_MGR_AddBossTrack(self,trkName,startPoint,endPoint)
+			local ply = LocalPlayer()
+			ply.VJ_MGR_CurrentPlayingTrack = 0
+			if ply.VJ_MGR_CurrentTrackChannelP1 then
+				ply.VJ_MGR_CurrentTrackChannelP1:Stop()
+				ply.VJ_MGR_CurrentTrackChannelP1 = nil
+			end
+			if ply.VJ_MGR_CurrentTrackChannelP2 then
+				ply.VJ_MGR_CurrentTrackChannelP2:Stop()
+				ply.VJ_MGR_CurrentTrackChannelP2 = nil
+			end
+
+        	local hookName = "VJ_MGR_SoundTrack_" .. self:EntIndex()
+			hook.Add("Think",hookName,function()
+				local ply = LocalPlayer()
+				if !IsValid(self) then
+					ply.VJ_MGR_StartedTracks = false
+					if ply.VJ_MGR_CurrentTrackChannelP1 then
+						ply.VJ_MGR_CurrentTrackChannelP1:Stop()
+						ply.VJ_MGR_CurrentTrackChannelP1 = nil
+					end
+					if ply.VJ_MGR_CurrentTrackChannelP2 then
+						ply.VJ_MGR_CurrentTrackChannelP2:Stop()
+						ply.VJ_MGR_CurrentTrackChannelP2 = nil
+					end
+					hook.Remove("Think",hookName)
+					return
+				end
+
+				local phase = self:GetNW2Int("Phase")
+				local volMix = GetConVar("vj_mgr_mus_vol"):GetInt() *0.01
+				local targetVol1 = 0.7
+				local targetVol2 = 0.1
+				ply.VJ_MGR_CurrentTrack = phase
+				local track1 = ply.VJ_MGR_CurrentTrackChannelP1
+				local track2 = ply.VJ_MGR_CurrentTrackChannelP2
+				if !ply.VJ_MGR_StartedTracks then
+					VJ_MGR_CreateTracks(ply,trkName)
+					return
+				end
+				if track1 == nil or track2 == nil then return end
+				local vol1 = track1:GetVolume()
+				local vol2 = track2:GetVolume()
+				local time1 = track1:GetTime()
+				local time2 = track2:GetTime()
+				if time1 >= endPoint then
+					track1:SetTime(startPoint)
+				end
+				if time2 >= endPoint then
+					track2:SetTime(startPoint)
+				end
+				if phase == 2 then
+					targetVol1 = 0
+					targetVol2 = 0.7
+					ply.VJ_MGR_CurrentTrackChannelP1:SetVolume(Lerp(FrameTime() *2,vol1,targetVol1 *volMix))
+					ply.VJ_MGR_CurrentTrackChannelP2:SetVolume(Lerp(FrameTime() *2,vol2,targetVol2 *volMix))
+				else
+					ply.VJ_MGR_CurrentTrackChannelP1:SetVolume(Lerp(FrameTime() *2,vol1,targetVol1 *volMix))
+					ply.VJ_MGR_CurrentTrackChannelP2:SetVolume(Lerp(FrameTime() *2,vol2,targetVol2 *volMix))
+				end
+				if ply.VJ_MGR_CurrentPlayingTrack != phase then
+					ply.VJ_MGR_CurrentPlayingTrack = phase
+					if phase == 1 then
+						ply.VJ_MGR_CurrentTrackChannelP1:Play()
+					elseif phase == 2 then
+						ply.VJ_MGR_CurrentTrackChannelP2:Play()
+						ply.VJ_MGR_CurrentTrackChannelP2:SetTime(40)
+					end
+				end
+			end)
+		end
+
+		function VJ_MGR_CreateTracks(ply,trkName)        
+			VJ_MGR_CreateAudioStream(ply,"cpthazama/mgr/music/" .. trkName .. "_phase1.mp3",1)
+			VJ_MGR_CreateAudioStream(ply,"cpthazama/mgr/music/" .. trkName .. "_phase2.mp3",2)
+			ply.VJ_MGR_StartedTracks = true
+		end
+
+		function VJ_MGR_OnCreatedAudioStream(channel,ply,trkID)
+			if trkID == 1 then
+				ply.VJ_MGR_CurrentTrackChannelP1 = channel
+			elseif trkID == 2 then
+				ply.VJ_MGR_CurrentTrackChannelP2 = channel
+			end
+		end
+
+		function VJ_MGR_CreateAudioStream(ply,snd,trkID)
+			local volMix = GetConVar("vj_mgr_mus_vol"):GetInt() *0.01
+			sound.PlayFile("sound/" .. snd,"noplay noblock",function(station,errCode,errStr)
+				if IsValid(station) then
+					station:EnableLooping(true)
+					station:SetVolume(trkID == 2 && 0.1 *volMix or 0.7 *volMix)
+					station:SetPlaybackRate(1)
+					VJ_MGR_OnCreatedAudioStream(station,ply,trkID)
+					print("Successfully created audio stream for " .. snd)
+				else
+					print("Error playing sound!",errCode,errStr)
+				end
+				return station
+			end)
+		end
+
 		local mat = Material("hud/cpthazama/mgr/bar.png","smooth unlitgeneric")
 		local mat_hp = Material("hud/cpthazama/mgr/bar_lines.png","smooth unlitgeneric")
 		local mat_up = Material("hud/cpthazama/mgr/corner_top.png","smooth unlitgeneric")
@@ -116,90 +218,9 @@ if VJExists == true then
 				)
 			end)
 		end
-
-        -- local mat = Material("hud/cpthazama/mgr/bar.png","smooth unlitgeneric")
-        -- local mat_hp = Material("hud/cpthazama/mgr/bar_lines.png","smooth unlitgeneric")
-        -- local mat_up = Material("hud/cpthazama/mgr/corner_top.png","smooth unlitgeneric")
-        -- local mat_down = Material("hud/cpthazama/mgr/corner_bottom.png","smooth unlitgeneric")
-        -- hook.Add("HUDPaint","TYEST",function()
-			-- local ply = LocalPlayer()
-			
-			-- local hp = 2500
-			-- local hpmax = 2500
-			-- local scrX = (ScrW() *0.78)
-			-- local scrY = (ScrH() *0.65)
-			-- local posX = (mat:Width() *0.67)
-			-- local posY = (mat:Height() *22)
-			-- local sizeX = mat:Width() *2
-			-- local sizeY = mat:Height() *1.55
-			-- local per = (hp /hpmax) *100
-			-- local capSize = 20
-
-			-- surface.SetDrawColor(204,162,104)
-			-- surface.SetMaterial(mat_up)
-			-- surface.DrawTexturedRect(
-			--     scrX -posX *-2,
-			--     scrY +posY *0.7,
-			--     capSize *2,
-			--     capSize
-			-- )
-
-
-			-- surface.SetDrawColor(204,162,104)
-			-- surface.SetMaterial(mat_down)
-			-- surface.DrawTexturedRect(
-			--     scrX -posX *-2,
-			--     scrY +posY *1.15,
-			--     capSize *2,
-			--     capSize
-			-- )
-
-			-- surface.SetDrawColor(255,255,255)
-			-- surface.SetMaterial(mat)
-			-- surface.DrawTexturedRect(
-			--     scrX -posX,
-			--     scrY +posY *0.955,
-			--     sizeX,
-			--     sizeY *0.5
-			-- )
-
-			-- surface.SetDrawColor(220,105,15)
-			-- surface.SetMaterial(mat_hp)
-			-- surface.DrawTexturedRect(
-			--     scrX -posX,
-			--     scrY +posY,
-			--     sizeX,
-			--     sizeY
-			-- )
-
-			-- surface.SetDrawColor(240,240,105)
-			-- surface.SetMaterial(mat_hp)
-			-- surface.DrawTexturedRect(
-			--     scrX -posX,
-			--     scrY +(posY +2),
-			--     sizeX *(hp /hpmax),
-			--     sizeY *0.88
-			-- )
-
-			-- draw.DrawText(
-			--     "Mistral",
-			--     "MGR_Font",
-			--     scrX -(mat:Width() *0.65),
-			--     scrY +(mat:Height() *19.3),
-			--     Color(183,195,189,255),
-			--     TEXT_ALIGN_LEFT
-			-- )
-
-			-- draw.DrawText(
-			--     per .. "%",
-			--     "MGR_Font2",
-			--     scrX -(mat:Width() *-(0.94 -(string.len(per .. "%") *0.05))),
-			--     scrY +(mat:Height() *18),
-			--     Color(204,162,104,255),
-			--     TEXT_ALIGN_LEFT
-			-- )
-		-- end)
 	end
+
+	VJ.AddClientConVar("vj_mgr_mus_vol",70,"Music Volume")
 
 	local vCat = Name
 	VJ.AddCategoryInfo(vCat,{Icon = "vj_icons/mgr.png"})

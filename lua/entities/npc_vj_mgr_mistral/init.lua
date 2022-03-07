@@ -274,8 +274,8 @@ function ENT:SetWeapon(b)
 	self.ConstantlyFaceEnemy = b
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-local debug = true
-local doEntPos = false
+local debug = false
+local doEntPos = true
 --
 function ENT:StartDamageCalc(dmg)
 	local wep = self:GetNW2Entity("Weapon")

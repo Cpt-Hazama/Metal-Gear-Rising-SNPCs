@@ -1,0 +1,18 @@
+"VertexlitGeneric"
+{
+    "$basetexture"              "models/cpthazama/mgr/mg_ray/em0200000"
+    "$bumpmap"                  "models/cpthazama/mgr/mg_ray/em0200000_n"
+    "$phongexponenttexture"     "models/cpthazama/mgr/mg_ray/em0200000_s"
+
+    "$selfillum" 				"1"
+    "$selfillummask" 			"models/cpthazama/mgr/mg_ray/em0200000_g"
+
+    "$nodecal"                  "1"
+    "$translucent"              "1"
+
+    "$ambientocclusion"         "0.7"
+    "$phong"                    "1"
+    "$phongboost"               "19.986979"
+    "$phongfresnelranges"       "[0.87 0.9 1]"
+    "$phongalbedotint"          "1"
+}

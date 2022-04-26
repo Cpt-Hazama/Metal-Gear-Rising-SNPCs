@@ -1,0 +1,18 @@
+"VertexlitGeneric"
+{
+    "$basetexture"              "models/cpthazama/mgr/sam/em0021000"
+    "$bumpmap"                  "models/cpthazama/mgr/sam/em0021000_n"
+    "$phongexponenttexture"     "models/cpthazama/mgr/sam/em0021000_s"
+
+    "$model"                    "1"
+    "$nodecal"                  "1"
+    "$halflambert"              "1"
+    "$nocull"                   "1"
+    "$translucent"              "1"
+
+    "$phong"                    "1"
+    "$phongboost"               "0.1"
+    "$phongfresnelranges"       "[0.05 0.5 1]"
+
+    "$lightwarptexture"				"models/cpthazama/mgr/warp2"
+}

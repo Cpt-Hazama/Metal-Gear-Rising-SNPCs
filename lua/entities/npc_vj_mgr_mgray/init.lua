@@ -7,6 +7,7 @@ include('shared.lua')
 -----------------------------------------------*/
 ENT.Model = {"models/cpthazama/mgr/mg_ray.mdl"}
 ENT.StartHealth = 8000
+ENT.HullType = HULL_LARGE
 ENT.VJ_IsHugeMonster = true
 
 ENT.VJ_NPC_Class = {"CLASS_MG_DESPERADO"}
@@ -15,8 +16,6 @@ ENT.Bleeds = false
 
 -- ENT.CanFlinch = 1
 -- ENT.AnimTbl_Flinch = {"flinch1","flinch2","flinch3","flinch4","flinch5"}
-
-ENT.HullType = HULL_HUMAN
 
 ENT.HasMeleeAttack = false
 ENT.MeleeAttackDistance = 100
@@ -33,6 +32,10 @@ ENT.GeneralSoundPitch2 = 100
 ENT.SoundTbl_FootStep = {}
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnInitialize()
+	self:SetCollisionBounds(Vector(50,50,700),Vector(-50,-50,0))
+	-- self:SetCollisionBounds(Vector(1,1,700),Vector(-1,-1,0))
+	VJ_CreateBoneFollower(self)
+
 	self:SetPhase(1)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------

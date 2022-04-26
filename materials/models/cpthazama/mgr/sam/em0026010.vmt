@@ -1,0 +1,26 @@
+"VertexlitGeneric"
+{
+    "$basetexture"              "models/cpthazama/mgr/sam/em0026010"
+    "$bumpmap"                  "models/cpthazama/mgr/mistral/em0110012_n"
+    "$phongexponenttexture"     "vj_base/exponent"
+
+    "$nodecal"                  "1"
+	"$ambientocclusion"         "1"
+	"$halflambert"              "1"
+
+    "$phongalbedotint"          "0"
+    "$phongexponent"            "60"
+    "$phong"                    "1"
+    "$phongboost"               "3"
+    "$phongfresnelranges"       "[1 1.15 1.75]"
+    "$phongdisablehalflambert"  "1"
+
+    "$envmap"                   "models/cpthazama/mgr/eye-reflection-cubemap-"
+    "$envmapfresnel"            "1"
+    "$envmaptint"               "[0.00115 0.00115 0.00115]"
+
+    "$normalmapalphaenvmapmask" "1"
+    "$blendtintbybasealpha"     "1"
+
+    "$lightwarptexture"				"models/cpthazama/mgr/warp2"
+}

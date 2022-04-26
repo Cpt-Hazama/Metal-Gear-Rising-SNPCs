@@ -1,0 +1,17 @@
+"VertexlitGeneric"
+{
+    "$basetexture"              "models/cpthazama/mgr/raiden/pl0110010"
+    "$bumpmap"                  "models/cpthazama/mgr/flat"
+    "$phongexponenttexture"     "vj_base/exponent"
+
+    "$nodecal"                  "1"
+    "$translucent"              "1"
+
+    "$ambientocclusion"         "0.7"
+    "$phong"                    "1"
+    "$phongboost"               "0.025"
+    "$phongfresnelranges"       "[0.87 0.9 1]"
+    "$phongalbedotint"          "1"
+
+    "$lightwarptexture"				"models/cpthazama/mgr/warp2"
+}

@@ -1,4 +1,4 @@
-ENT.Base 			= "npc_vj_creature_base"
+ENT.Base 			= "npc_vj_mgr_boss_base"
 ENT.Type 			= "ai"
 ENT.PrintName 		= ""
 ENT.Author 			= "Cpt. Hazama"
@@ -36,5 +36,9 @@ if CLIENT then
     function ENT:Initialize()
         VJ_MGR_HPBar(self)
         VJ_MGR_AddBossTrack(self,"mistral",20.65,128.15)
+    end
+
+    function ENT:OnPhaseChanged(phase,track1,track2,ply)
+        track2:SetTime(40)
     end
 end

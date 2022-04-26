@@ -70,11 +70,13 @@ if VJExists == true then
 				local vol2 = track2:GetVolume()
 				local time1 = track1:GetTime()
 				local time2 = track2:GetTime()
-				if time1 >= endPoint then
-					track1:SetTime(startPoint)
-				end
-				if time2 >= endPoint then
-					track2:SetTime(startPoint)
+				if startPoint != false && endPoint != false then
+					if time1 >= endPoint then
+						track1:SetTime(startPoint)
+					end
+					if time2 >= endPoint then
+						track2:SetTime(startPoint)
+					end
 				end
 				if phase == 2 then
 					targetVol1 = 0
@@ -91,7 +93,10 @@ if VJExists == true then
 						ply.VJ_MGR_CurrentTrackChannelP1:Play()
 					elseif phase == 2 then
 						ply.VJ_MGR_CurrentTrackChannelP2:Play()
-						ply.VJ_MGR_CurrentTrackChannelP2:SetTime(40)
+						-- ply.VJ_MGR_CurrentTrackChannelP2:SetTime(40)
+					end
+					if self.OnPhaseChanged then
+						self:OnPhaseChanged(phase,track1,track2,ply)
 					end
 				end
 			end)
@@ -150,7 +155,7 @@ if VJExists == true then
 				local posY = (mat:Height() *22)
 				local sizeX = mat:Width() *2
 				local sizeY = mat:Height() *1.55
-				local per = (hp /hpmax) *100
+				local per = math.Round((hp /hpmax) *100,2)
 				local capSize = 20
 
 				surface.SetDrawColor(204,162,104)
@@ -225,6 +230,8 @@ if VJExists == true then
 	local vCat = Name
 	VJ.AddCategoryInfo(vCat,{Icon = "vj_icons/mgr.png"})
 
+	VJ.AddNPC("Raiden","npc_vj_mgr_raiden",vCat)
+
 	VJ.AddNPC("Bladewolf","npc_vj_mgr_bladewolf",vCat)
 	VJ.AddNPC("Mistral","npc_vj_mgr_mistral",vCat)
 	VJ.AddNPC("Mistral (Coat)","npc_vj_mgr_mistral_2",vCat)
@@ -232,6 +239,7 @@ if VJExists == true then
 	VJ.AddNPC("Sundowner","npc_vj_mgr_sundowner",vCat)
 	VJ.AddNPC("Sundowner (Coat)","npc_vj_mgr_sundowner_2",vCat)
 	VJ.AddNPC("Jetstream Sam","npc_vj_mgr_sam",vCat)
+	VJ.AddNPC("Jetstream Sam (Mercenary)","npc_vj_mgr_sam_2",vCat)
 	VJ.AddNPC("Wolf","npc_vj_mgr_bladewolf_2",vCat)
 	VJ.AddNPC("Senator Armstrong","npc_vj_mgr_armstrong",vCat) -- 3 Phases (Shirt, Shirtless, Finale Shirtless)
 

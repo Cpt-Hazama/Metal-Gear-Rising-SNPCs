@@ -168,32 +168,36 @@ function ENT:CustomOnThink()
 
 	self.CanFlinch = self:GetState() != VJ_STATE_NONE && 0 or 1
 
-	if key_jum then
-		local dTbl = {}
-		if key_bac then table.insert(dTbl,1) end
-		if key_rig then table.insert(dTbl,2) end
-		if key_lef then table.insert(dTbl,3) end
-		if key_for then table.insert(dTbl,4) end
-		if #dTbl <= 0 then
-			dTbl = 1
+	if self.CustomThink then
+		self:CustomThink(ent,dist,cont,key_atk,key_for,key_bac,key_lef,key_rig,key_jum,isMoving)
+	else
+		if key_jum then
+			local dTbl = {}
+			if key_bac then table.insert(dTbl,1) end
+			if key_rig then table.insert(dTbl,2) end
+			if key_lef then table.insert(dTbl,3) end
+			if key_for then table.insert(dTbl,4) end
+			if #dTbl <= 0 then
+				dTbl = 1
+			end
+			self:Dodge(dTbl)
 		end
-		self:Dodge(dTbl)
-	end
 
-	if IsValid(ent) && !self:IsBusy() then
-		if key_atk or !IsValid(cont) && dist <= self.MeleeAttackDistance && !self.Attacking && self:CheckCanSee(ent,55) then
-			self:Attack()
+		if IsValid(ent) && !self:IsBusy() then
+			if key_atk or !IsValid(cont) && dist <= self.MeleeAttackDistance && !self.Attacking && self:CheckCanSee(ent,55) then
+				self:Attack()
+			end
+			if self:GetAttackNames(ent) && dist <= 350 && math.random(1,4) == 1 then
+				self:Dodge()
+			end
 		end
-		if self:GetAttackNames(ent) && dist <= 350 && math.random(1,4) == 1 then
-			self:Dodge()
-		end
-	end
 
-	if !self:IsBusy() && self.LastActivity == ACT_WALK && (!IsValid(cont) && self.GoalTime <= 1.2 && self.GoalTime > 0.2 or IsValid(cont) && !isMoving) && self.LastSequence != "walk_to_idle" then
-		self:VJ_ACT_PLAYACTIVITY("walk_to_idle",true,false,false)
-	-- elseif self.LastActivity == ACT_IDLE && self:GetActivity() == ACT_WALK then
-		-- self:VJ_ACT_PLAYACTIVITY("vjges_idle_to_walk",true,false,false)
-		-- self:ResetIdealActivity(VJ_SequenceToActivity(self,"idle_to_walk"))
+		if !self:IsBusy() && self.LastActivity == ACT_WALK && (!IsValid(cont) && self.GoalTime <= 1.2 && self.GoalTime > 0.2 or IsValid(cont) && !isMoving) && self.LastSequence != "walk_to_idle" then
+			self:VJ_ACT_PLAYACTIVITY("walk_to_idle",true,false,false)
+		-- elseif self.LastActivity == ACT_IDLE && self:GetActivity() == ACT_WALK then
+			-- self:VJ_ACT_PLAYACTIVITY("vjges_idle_to_walk",true,false,false)
+			-- self:ResetIdealActivity(VJ_SequenceToActivity(self,"idle_to_walk"))
+		end
 	end
 
 	self.LastActivity = self:GetActivity()

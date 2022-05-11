@@ -15,6 +15,53 @@ local VJExists = file.Exists("lua/autorun/vj_base_autorun.lua","GAME")
 if VJExists == true then
 	include('autorun/vj_controls.lua')
 
+	if SERVER then
+		local NPC = FindMetaTable("NPC")
+
+		function NPC:VJ_MGR_PlayGesture(seq,rate)
+			local rate = rate or 1
+			local gesture = self:AddGestureSequence(self:LookupSequence(seq))
+			self:SetLayerPriority(gesture, 1)
+			self:SetLayerPlaybackRate(gesture, rate *0.5)
+		end
+
+		function NPC:VJ_MGR_UniqueMovement()
+			local moveData = self.AnimTbl_Movements
+			if !moveData then return end
+
+			self.LastSequence = self:GetSequenceName(self:GetSequence())
+			self.GoalDist = self:GetPathDistanceToGoal()
+			self.GoalTime = self:GetPathTimeToGoal()
+
+			local cont = self.VJ_TheController
+			local key_for = IsValid(cont) && cont:KeyDown(IN_FORWARD)
+			local key_bac = IsValid(cont) && cont:KeyDown(IN_BACK)
+			local key_lef = IsValid(cont) && cont:KeyDown(IN_MOVELEFT)
+			local key_rig = IsValid(cont) && cont:KeyDown(IN_MOVERIGHT)
+			local isMoving = (key_for || key_bac || key_lef || key_rig)
+
+			for _,dat in pairs(moveData) do
+				if !self:IsBusy() && VJ_HasValue(dat.Loop,self.LastActivity) && (!IsValid(cont) && self.GoalTime <= dat.GoalMax && self.GoalTime > dat.GoalMin or IsValid(cont) && !isMoving) && self.LastSequence != dat.End then
+					self:VJ_ACT_PLAYACTIVITY(dat.End,true,false,false)
+				elseif VJ_HasValue(dat.ReqIdle,self.LastActivity) && VJ_HasValue(dat.Loop,self:GetActivity()) then
+					self:VJ_MGR_PlayGesture(dat.Start)
+					-- self:VJ_ACT_PLAYACTIVITY("vjges_" .. dat.Start,true,false,false,0,{OnFinish=function(interrupted,anim)
+					-- 	if interrupted then
+					-- 		return
+					-- 	end
+						-- if self:GetActivity() == dat.Loop then -- Fix stuttering
+						-- 	self:SetCycle(self:GetCycle() *0.275)
+						-- end
+					-- end})
+					self:ResetIdealActivity(VJ_SequenceToActivity(self,dat.Start))
+				end
+			end
+
+			self.LastIdealActivity = self:GetIdealActivity()
+			self.LastActivity = self:GetActivity()
+		end
+	end
+
 	if CLIENT then
 		surface.CreateFont("MGR_Font", {
 			font = "Techno Hideo",
@@ -23,6 +70,14 @@ if VJExists == true then
 		surface.CreateFont("MGR_Font2", {
 			font = "Techno Hideo",
 			size = 50,
+		})
+		surface.CreateFont("MGR_Font3", {
+			font = "Techno Hideo",
+			size = 25,
+		})
+		surface.CreateFont("MGR_Font4", {
+			font = "Techno Hideo",
+			size = 35,
 		})
 
 		function VJ_MGR_AddBossTrack(self,trkName,startPoint,endPoint)
@@ -138,16 +193,12 @@ if VJExists == true then
 		local mat_down = Material("hud/cpthazama/mgr/corner_bottom.png","smooth unlitgeneric")
 		function VJ_MGR_HPBar(self)
 			if !IsValid(self) then return end
-			local hookName = "VJ_MGR_HPBar_" .. self:EntIndex()
+			local isPlyCharacter = self.MGR_IsPlayerCharacter
+			local isBossCharacter = self.MGR_DrawBossHUD
 			local name = list.Get("NPC")[self:GetClass()].Name
-			hook.Add("HUDPaint",hookName,function()
+			hook.Add("HUDPaint",self,function()
 				local ply = LocalPlayer()
-				if !IsValid(self) then
-					hook.Remove("HUDPaint",hookName)
-					return
-				end
-
-				local hp = self:GetNW2Int("HP")
+				local hp = self.GetHP && self:GetHP() or self:Health()
 				local hpmax = self:GetMaxHealth()
 				local scrX = (ScrW() *0.78)
 				local scrY = (ScrH() *0.65)
@@ -157,6 +208,81 @@ if VJExists == true then
 				local sizeY = mat:Height() *1.55
 				local per = math.Round((hp /hpmax) *100,2)
 				local capSize = 20
+				local disableBossHUD = false
+
+				if ply.IsControlingNPC && ply.VJCE_NPC == self then
+					scrX = (ScrW() *0.1)
+					scrY = (ScrH() *0.065)
+					posX = (mat:Width() *0.67)
+					posY = (mat:Height())
+
+					surface.SetDrawColor(255,126,27)
+					surface.SetMaterial(mat_hp)
+					surface.DrawTexturedRect(
+						scrX -posX,
+						scrY,
+						sizeX,
+						sizeY
+					)
+
+					surface.SetDrawColor(240,240,105,80)
+					surface.SetMaterial(mat_hp)
+					surface.DrawTexturedRect(
+						scrX -posX,
+						scrY +2,
+						sizeX *(hp /hpmax),
+						sizeY *0.88
+					)
+
+					draw.DrawText(
+						name,
+						"MGR_Font3",
+						scrX -(mat:Width() *0.65),
+						scrY +(mat:Height() *-1.65),
+						Color(183,195,189,255),
+						TEXT_ALIGN_LEFT
+					)
+
+					draw.DrawText(
+						per .. "%",
+						"MGR_Font2",
+						scrX -(mat:Width() *-(0.95 -(string.len(per .. "%") *0.05))),
+						scrY +(mat:Height() *-2.85),
+						Color(200,135,45,255),
+						TEXT_ALIGN_LEFT
+					)
+
+					if self.GetElectrolytes then
+						local electro = self:GetElectrolytes()
+						local electroMax = self:GetMaxElectrolytes()
+						scrX = (ScrW() *0.1)
+						scrY = (ScrH() *0.085)
+						posX = (mat:Width() *0.67)
+						posY = (mat:Height())
+
+						surface.SetDrawColor(101,154,155)
+						surface.SetMaterial(mat_hp)
+						surface.DrawTexturedRect(
+							scrX -posX,
+							scrY,
+							sizeX,
+							sizeY
+						)
+
+						surface.SetDrawColor(0,255,234)
+						surface.SetMaterial(mat_hp)
+						surface.DrawTexturedRect(
+							scrX -posX,
+							scrY +2,
+							sizeX *(electro /electroMax),
+							sizeY *0.88
+						)
+					end
+
+					disableBossHUD = true
+				end
+
+				if !isBossCharacter or disableBossHUD then return end
 
 				surface.SetDrawColor(204,162,104)
 				surface.SetMaterial(mat_up)
@@ -187,16 +313,16 @@ if VJExists == true then
 				)
 
 				surface.SetDrawColor(220,105,15)
-				surface.SetMaterial(mat_hp)
+				surface.SetMaterial(mat)
 				surface.DrawTexturedRect(
-					scrX -posX,
-					scrY +posY,
-					sizeX,
-					sizeY
+					scrX -(posX +3),
+					scrY +(posY -3),
+					sizeX *1.01,
+					sizeY *1.25
 				)
 
 				surface.SetDrawColor(240,240,105)
-				surface.SetMaterial(mat_hp)
+				surface.SetMaterial(mat)
 				surface.DrawTexturedRect(
 					scrX -posX,
 					scrY +(posY +2),

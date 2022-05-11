@@ -7,9 +7,10 @@ ENT.Purpose 		= "Spawn it and fight with it!"
 ENT.Instructions 	= "Click on the spawnicon to spawn it."
 ENT.Category		= ""
 
+ENT.MGR_IsPlayerCharacter = true
+
 if CLIENT then
     function ENT:Initialize()
-        -- VJ_MGR_HPBar(self)
-        -- VJ_MGR_AddBossTrack(self,"raiden",false,false)
+        VJ_MGR_HPBar(self)
     end
 end

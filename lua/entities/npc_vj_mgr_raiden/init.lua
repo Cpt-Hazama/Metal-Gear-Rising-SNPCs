@@ -36,6 +36,12 @@ ENT.DisableDefaultMeleeAttackDamageCode = true
 
 ENT.AttackProps = false
 
+ENT.AnimTbl_Movements = {
+	[1] = {Start = "0010",Loop = {ACT_WALK}, End = "0012", ReqIdle = {ACT_IDLE}, GoalMax = 1.2, GoalMin = 0.2},
+	[3] = {Start = "0020",Loop = {ACT_RUN}, End = "0022", ReqIdle = {ACT_IDLE,ACT_WALK}, GoalMax = 0.21, GoalMin = 0},
+	[3] = {Start = "6000",Loop = {ACT_SPRINT}, End = "6014", ReqIdle = {ACT_IDLE,ACT_WALK,ACT_RUN}, GoalMax = 0.15, GoalMin = 0},
+}
+
 ENT.DisableFootStepSoundTimer = true
 ENT.GeneralSoundPitch1 = 100
 ENT.GeneralSoundPitch2 = 100
@@ -44,12 +50,22 @@ ENT.SoundTbl_FootStep = {}
 
 ENT.AnimationSet = 0 -- 0 = Relaxed, 1 = Combat
 ENT.MovementSet = 0 -- 0 = Default, 1 = Slow, 2 = Fast, 3 = NPC
+ENT.AttackMode = 0 -- 0 = Default, 1 = Blade Mode, 2 = H2H
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnInit()
 	self:SetPhase(2)
 
+	self.LastBladeModeAngle = 0
+
 	self.AnimTbl_Walk = {ACT_RUN}
 	self.AnimTbl_Run = {ACT_RUN}
+
+	-- hook.Add("StartCommand",self,function(self, ply,cmd)
+	-- 	if ply == self.VJ_TheController then
+	-- 		local angle = math.atan2(cmd:GetMouseY(),cmd:GetMouseX())
+	-- 		self.LastBladeModeAdjust = angle
+	-- 	end
+	-- end)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnAcceptInput(key,activator,caller,data)
@@ -61,8 +77,67 @@ end
 function ENT:CustomThink(ent,dist,cont,key_atk,key_for,key_bac,key_lef,key_rig,key_jum,isMoving)
 	local key_walk = IsValid(cont) && cont:KeyDown(IN_WALK)
 	local key_sprint = IsValid(cont) && cont:KeyDown(IN_SPEED)
+	local key_atk2 = IsValid(cont) && cont:KeyDown(IN_ATTACK2)
+
+	if self.AttackMode == 1 then
+		self:SetCycle(self.LastBladeModeAngle /360)
+	end
 
 	if IsValid(cont) then
+		if key_atk2 then
+			if self.AttackMode != 1 then
+				self.AttackMode = 1
+				self:StopMoving()
+				self:ClearSchedule()
+				self:SetMaxYawSpeed(8)
+				self:SetState(VJ_STATE_ONLY_ANIMATION_NOATTACK)
+				self.NextIdleStandT = 0
+				self.AnimTbl_IdleStand = {ACT_HL2MP_IDLE}
+				self.AnimationPlaybackRate = 4
+				if game.SinglePlayer() then
+					game.SetTimeScale(0.1)
+				end
+			else
+				if key_atk then
+					// Attack
+					self:SetMaxYawSpeed(20)
+					for _,v in ipairs(ents.FindInSphere(self:GetPos(),self.MeleeAttackDistance)) do
+						if !self:DoRelationshipCheck(v) && v != self then
+							v:TakeDamage(5,self,self)
+						end
+					end
+				else
+					self:SetMaxYawSpeed(8)
+				end
+				local targetValue = false
+				if key_for then
+					targetValue = self.LastBladeModeAngle > 180 && 360 or 0
+				end
+				if key_lef then
+					targetValue = 270
+				end
+				if key_rig then
+					targetValue = 90
+				end
+				if key_bac then
+					targetValue = 180
+				end
+				-- targetValue = self.LastBladeModeAdjust *15 or false
+				self.LastBladeModeAngle = Lerp(FrameTime() *(12 *self.AnimationPlaybackRate),self.LastBladeModeAngle,targetValue != false && targetValue or self.LastBladeModeAngle)
+			end
+		else
+			if self.AttackMode == 1 then
+				self.AttackMode = 0
+				self:SetMaxYawSpeed(self.TurningSpeed)
+				self:SetState()
+				self.NextIdleStandT = 0
+				self.AnimTbl_IdleStand = {ACT_IDLE}
+				self.AnimationPlaybackRate = 1
+				if game.SinglePlayer() then
+					game.SetTimeScale(1)
+				end
+			end
+		end
 		if key_sprint then
 			if self.MovementSet != 2 then
 				self.AnimTbl_Walk = {ACT_SPRINT}
@@ -90,22 +165,7 @@ function ENT:CustomThink(ent,dist,cont,key_atk,key_for,key_bac,key_lef,key_rig,k
 		end
 	end
 
-	if !self:IsBusy() && self.LastActivity == ACT_WALK && (!IsValid(cont) && self.GoalTime <= 1.2 && self.GoalTime > 0.2 or IsValid(cont) && !isMoving) && self.LastSequence != "pl0010_0012" then
-		self:VJ_ACT_PLAYACTIVITY("pl0010_0012",true,false,false)
-	elseif self.LastActivity == ACT_IDLE && self:GetActivity() == ACT_WALK then
-		self:VJ_ACT_PLAYACTIVITY("vjges_pl0010_0010",true,false,false)
-		self:ResetIdealActivity(VJ_SequenceToActivity(self,"pl0010_0010"))
-	elseif !self:IsBusy() && self.LastActivity == ACT_RUN && (!IsValid(cont) && self.GoalTime <= 0.21 && self.GoalTime > 0 or IsValid(cont) && !isMoving) && self.LastSequence != "pl0010_0022" then
-		self:VJ_ACT_PLAYACTIVITY("pl0010_0022",true,false,false)
-	elseif self.LastActivity == ACT_IDLE && self:GetActivity() == ACT_RUN then
-		self:VJ_ACT_PLAYACTIVITY("vjges_pl0010_0020",true,false,false)
-		self:ResetIdealActivity(VJ_SequenceToActivity(self,"pl0010_0020"))
-	elseif !self:IsBusy() && self.LastActivity == ACT_SPRINT && (!IsValid(cont) && self.GoalTime <= 0.21 && self.GoalTime > 0 or IsValid(cont) && !isMoving) && self.LastSequence != "pl0010_0022" then
-		self:VJ_ACT_PLAYACTIVITY("pl0010_0022",true,false,false)
-	elseif self.LastActivity == ACT_IDLE && self:GetActivity() == ACT_SPRINT then
-		self:VJ_ACT_PLAYACTIVITY("vjges_pl0010_0020",true,false,false)
-		self:ResetIdealActivity(VJ_SequenceToActivity(self,"pl0010_0020"))
-	end
+	self:VJ_MGR_UniqueMovement()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnTakeDamage_OnBleed(dmginfo, hitgroup)

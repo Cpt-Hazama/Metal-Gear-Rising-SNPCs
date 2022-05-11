@@ -30,6 +30,11 @@ ENT.MeleeAttackDistance = 100
 ENT.ConstantlyFaceEnemy_Postures = "Moving"
 ENT.ConstantlyFaceEnemyDistance = 2500
 
+ENT.AnimTbl_Movements = {
+	[1] = {Start = "idle_to_walk",Loop = {ACT_WALK}, End = "walk_to_idle", ReqIdle = {ACT_IDLE}, GoalMax = 1.2, GoalMin = 0.2},
+	[2] = {Start = "idle_to_walk",Loop = {ACT_RUN}, End = "walk_to_idle", ReqIdle = {ACT_IDLE,ACT_WALK}, GoalMax = 0.24, GoalMin = 0},
+}
+
 ENT.SoundTbl_FootStep = {
 	"player/footsteps/fs_tile_01.wav",
 	"player/footsteps/fs_tile_02.wav",
@@ -284,6 +289,10 @@ function ENT:DoEvents(key)
 	elseif key == "dmg_whip_start" then
 		self:StartDamageCalc(math.random(60,70))
 	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnThink(ent,dist,cont,key_atk,key_for,key_bac,key_lef,key_rig,key_jum,isMoving)
+	self:VJ_MGR_UniqueMovement()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:AttackUnique(atk)

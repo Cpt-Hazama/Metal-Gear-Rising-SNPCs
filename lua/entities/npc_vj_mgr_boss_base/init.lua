@@ -30,6 +30,9 @@ function ENT:CustomOnInitialize()
 	self.CurrentStringAnim = nil
 	self.Attacking = false
 
+	self:SetElectrolytes(100)
+	self:SetMaxElectrolytes(100)
+
 	if self.OnInit then
 		self:OnInit()
 	end
@@ -164,13 +167,17 @@ function ENT:CustomOnThink()
 	local key_jum = IsValid(cont) && cont:KeyDown(IN_JUMP)
 	local isMoving = (key_for || key_bac || key_lef || key_rig)
 
-	self:SetNW2Int("HP",self:Health())
+	self:SetHP(self:Health())
 
 	self.CanFlinch = self:GetState() != VJ_STATE_NONE && 0 or 1
 
 	if self.CustomThink then
 		self:CustomThink(ent,dist,cont,key_atk,key_for,key_bac,key_lef,key_rig,key_jum,isMoving)
 	else
+		if self.OnThink then
+			self:OnThink(ent,dist,cont,key_atk,key_for,key_bac,key_lef,key_rig,key_jum,isMoving)
+		end
+
 		if key_jum then
 			local dTbl = {}
 			if key_bac then table.insert(dTbl,1) end
@@ -190,13 +197,6 @@ function ENT:CustomOnThink()
 			if self:GetAttackNames(ent) && dist <= 350 && math.random(1,4) == 1 then
 				self:Dodge()
 			end
-		end
-
-		if !self:IsBusy() && self.LastActivity == ACT_WALK && (!IsValid(cont) && self.GoalTime <= 1.2 && self.GoalTime > 0.2 or IsValid(cont) && !isMoving) && self.LastSequence != "walk_to_idle" then
-			self:VJ_ACT_PLAYACTIVITY("walk_to_idle",true,false,false)
-		-- elseif self.LastActivity == ACT_IDLE && self:GetActivity() == ACT_WALK then
-			-- self:VJ_ACT_PLAYACTIVITY("vjges_idle_to_walk",true,false,false)
-			-- self:ResetIdealActivity(VJ_SequenceToActivity(self,"idle_to_walk"))
 		end
 	end
 

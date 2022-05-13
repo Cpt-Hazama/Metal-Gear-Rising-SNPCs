@@ -34,7 +34,7 @@ ENT.SoundTbl_FootStep = {}
 function ENT:CustomOnInitialize()
 	self:SetCollisionBounds(Vector(50,50,700),Vector(-50,-50,0))
 	-- self:SetCollisionBounds(Vector(1,1,700),Vector(-1,-1,0))
-	VJ_CreateBoneFollower(self)
+	-- VJ_CreateBoneFollower(self)
 
 	self:SetPhase(1)
 end
@@ -57,6 +57,11 @@ end
 function ENT:CustomOnAcceptInput(key,activator,caller,data)
 	if key == "step" then
 		VJ_EmitSound(self,self.SoundTbl_FootStep,75,math.random(90,110))
+	elseif key == "laser_start" then
+		self.LaserActive = true
+	elseif key == "laser_end" then
+		self.LaserActive = false
+		self:StopParticles()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -76,6 +81,19 @@ function ENT:CustomOnThink()
 	local isMoving = (key_for || key_bac || key_lef || key_rig)
 
 	self:SetNW2Int("HP",self:Health())
+
+	if self.LaserActive then
+		local att = self:GetAttachment(2)
+		local tr = util.TraceHull({
+			start = att.Pos,
+			endpos = att.Pos +att.Ang:Forward() *32000,
+			filter = self,
+			mins = Vector(-16,-16,-16),
+			maxs = Vector(16,16,16),
+		})
+		util.ParticleTracerEx("vj_mgr_ray_laser", att.Pos, tr.HitPos, false, self:EntIndex(), 2)
+		ParticleEffect("vj_mgr_ray_laser_impact", tr.HitPos, Angle())
+	end
 
 	-- self.CanFlinch = self:GetState() != VJ_STATE_NONE && 0 or 1
 

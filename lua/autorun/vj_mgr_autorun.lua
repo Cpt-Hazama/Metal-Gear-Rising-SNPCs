@@ -179,7 +179,7 @@ if VJExists == true then
 					station:SetVolume(trkID == 2 && 0.1 *volMix or 0.7 *volMix)
 					station:SetPlaybackRate(1)
 					VJ_MGR_OnCreatedAudioStream(station,ply,trkID)
-					print("Successfully created audio stream for " .. snd)
+					-- print("Successfully created audio stream for " .. snd)
 				else
 					print("Error playing sound!",errCode,errStr)
 				end
@@ -215,6 +215,8 @@ if VJExists == true then
 					scrY = (ScrH() *0.065)
 					posX = (mat:Width() *0.67)
 					posY = (mat:Height())
+
+					draw.RoundedBox(0,(ScrW() *0.01),(ScrH() *0.025),(ScrW() *0.265),(ScrH() *(self.GetElectrolytes && 0.085 or 0.065)),Color(5,5,5,175))
 
 					surface.SetDrawColor(255,126,27)
 					surface.SetMaterial(mat_hp)
@@ -283,6 +285,8 @@ if VJExists == true then
 				end
 
 				if !isBossCharacter or disableBossHUD then return end
+
+				draw.RoundedBox(0,(ScrW() *0.69),(ScrH() *0.823),(ScrW() *0.267),(ScrH() *0.12),Color(5,5,5,175))
 
 				surface.SetDrawColor(204,162,104)
 				surface.SetMaterial(mat_up)
@@ -379,6 +383,8 @@ if VJExists == true then
 	VJ.AddNPC("APC Transport","npc_vj_mgr_apc",vCat)
 	VJ.AddNPC("Hammerhead Helicopter","npc_vj_mgr_hammerhead",vCat)
 	VJ.AddNPC("Metal Gear EXCELSUS","npc_vj_mgr_mgexcelsus",vCat)
+
+	VJ.AddParticle("particles/vj_mgr_ray.pcf", {})
 
 -- !!!!!! DON'T TOUCH ANYTHING BELOW THIS !!!!!! -------------------------------------------------------------------------------------------------------------------------
 	AddCSLuaFile(AutorunFile)

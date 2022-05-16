@@ -11,4 +11,6 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Int",0,"HP")
 	self:NetworkVar("Int",1,"Electrolytes")
 	self:NetworkVar("Int",2,"MaxElectrolytes")
+	self:NetworkVar("Int",3,"StartPoint")
+	self:NetworkVar("Int",4,"EndPoint")
 end

@@ -9,10 +9,16 @@ ENT.Category		= ""
 
 ENT.MGR_DrawBossHUD = true
 
+function ENT:SetupDataTables()
+	self:NetworkVar("Int",0,"HP")
+	self:NetworkVar("Int",1,"StartPoint")
+	self:NetworkVar("Int",2,"EndPoint")
+end
+
 if CLIENT then
     function ENT:Initialize()
         VJ_MGR_HPBar(self)
-        VJ_MGR_AddBossTrack(self,"mg_ray",20.65,128.15)
+        VJ_MGR_AddBossTrack(self,"mg_ray",15,134.8)
     end
 
     function ENT:ControllerViewOverride(ply, origin, angles, fov)

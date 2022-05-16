@@ -15,14 +15,27 @@ local VJExists = file.Exists("lua/autorun/vj_base_autorun.lua","GAME")
 if VJExists == true then
 	include('autorun/vj_controls.lua')
 
+	function switch(val, tab)
+		if tab[val] then
+			return tab[val]()
+		else
+			return tab.default() or MsgN("[ERROR] Could not switch, invalid parameters!")
+		end
+	end
+
 	if SERVER then
 		local NPC = FindMetaTable("NPC")
 
-		function NPC:VJ_MGR_PlayGesture(seq,rate)
+		function NPC:VJ_MGR_PlayGesture(seq,rate,movement)
 			local rate = rate or 1
 			local gesture = self:AddGestureSequence(self:LookupSequence(seq))
 			self:SetLayerPriority(gesture, 1)
 			self:SetLayerPlaybackRate(gesture, rate *0.5)
+			timer.Simple(VJ_GetSequenceDuration(self,seq) *rate,function()
+				if IsValid(self) && self:GetActivity() == movement then
+					self:SetCycle(0)
+				end
+			end)
 		end
 
 		function NPC:VJ_MGR_UniqueMovement()
@@ -44,7 +57,7 @@ if VJExists == true then
 				if !self:IsBusy() && VJ_HasValue(dat.Loop,self.LastActivity) && (!IsValid(cont) && self.GoalTime <= dat.GoalMax && self.GoalTime > dat.GoalMin or IsValid(cont) && !isMoving) && self.LastSequence != dat.End then
 					self:VJ_ACT_PLAYACTIVITY(dat.End,true,false,false)
 				elseif VJ_HasValue(dat.ReqIdle,self.LastActivity) && VJ_HasValue(dat.Loop,self:GetActivity()) then
-					self:VJ_MGR_PlayGesture(dat.Start)
+					self:VJ_MGR_PlayGesture(dat.Start,nil,dat.Loop[1])
 					-- self:VJ_ACT_PLAYACTIVITY("vjges_" .. dat.Start,true,false,false,0,{OnFinish=function(interrupted,anim)
 					-- 	if interrupted then
 					-- 		return
@@ -117,7 +130,7 @@ if VJExists == true then
 				local track1 = ply.VJ_MGR_CurrentTrackChannelP1
 				local track2 = ply.VJ_MGR_CurrentTrackChannelP2
 				if !ply.VJ_MGR_StartedTracks then
-					VJ_MGR_CreateTracks(ply,trkName)
+					VJ_MGR_CreateTracks(ply,trkName,self,startPoint,endPoint)
 					return
 				end
 				if track1 == nil or track2 == nil then return end
@@ -125,30 +138,37 @@ if VJExists == true then
 				local vol2 = track2:GetVolume()
 				local time1 = track1:GetTime()
 				local time2 = track2:GetTime()
-				if startPoint != false && endPoint != false then
-					if time1 >= endPoint then
-						track1:SetTime(startPoint)
-					end
-					if time2 >= endPoint then
-						track2:SetTime(startPoint)
-					end
+				local stPoint = self:GetStartPoint() != 0 && self:GetStartPoint() or self.MGR_Music_StartPoint
+				local enPoint = self:GetEndPoint() != 0 && self:GetEndPoint() or self.MGR_Music_EndPoint
+
+				if self.OverrideMusicTracks then
+					self:OverrideMusicTracks(track1,track2,vol1,vol2,time1,time2,volMix,targetVol1,targetVol2)
+					return
+				end
+
+				if time1 >= enPoint then
+					track1:SetTime(stPoint)
+				end
+				if time2 >= enPoint then
+					track2:SetTime(stPoint)
 				end
 				if phase == 2 then
 					targetVol1 = 0
 					targetVol2 = 0.7
-					ply.VJ_MGR_CurrentTrackChannelP1:SetVolume(Lerp(FrameTime() *2,vol1,targetVol1 *volMix))
-					ply.VJ_MGR_CurrentTrackChannelP2:SetVolume(Lerp(FrameTime() *2,vol2,targetVol2 *volMix))
+					ply.VJ_MGR_CurrentTrackChannelP1:SetVolume(Lerp(FrameTime() *3,vol1,targetVol1 *volMix))
+					ply.VJ_MGR_CurrentTrackChannelP2:SetVolume(Lerp(FrameTime() *8,vol2,targetVol2 *volMix))
 				else
-					ply.VJ_MGR_CurrentTrackChannelP1:SetVolume(Lerp(FrameTime() *2,vol1,targetVol1 *volMix))
-					ply.VJ_MGR_CurrentTrackChannelP2:SetVolume(Lerp(FrameTime() *2,vol2,targetVol2 *volMix))
+					ply.VJ_MGR_CurrentTrackChannelP1:SetVolume(Lerp(FrameTime() *8,vol1,targetVol1 *volMix))
+					ply.VJ_MGR_CurrentTrackChannelP2:SetVolume(Lerp(FrameTime() *3,vol2,targetVol2 *volMix))
 				end
 				if ply.VJ_MGR_CurrentPlayingTrack != phase then
 					ply.VJ_MGR_CurrentPlayingTrack = phase
 					if phase == 1 then
 						ply.VJ_MGR_CurrentTrackChannelP1:Play()
+						ply.VJ_MGR_CurrentTrackChannelP1:SetTime(time2)
 					elseif phase == 2 then
 						ply.VJ_MGR_CurrentTrackChannelP2:Play()
-						-- ply.VJ_MGR_CurrentTrackChannelP2:SetTime(40)
+						ply.VJ_MGR_CurrentTrackChannelP2:SetTime(time1)
 					end
 					if self.OnPhaseChanged then
 						self:OnPhaseChanged(phase,track1,track2,ply)
@@ -157,15 +177,31 @@ if VJExists == true then
 			end)
 		end
 
-		function VJ_MGR_CreateTracks(ply,trkName)        
+		function VJ_MGR_CreateTracks(ply,trkName,self,startPoint,endPoint)        
 			VJ_MGR_CreateAudioStream(ply,"cpthazama/mgr/music/" .. trkName .. "_phase1.mp3",1)
 			VJ_MGR_CreateAudioStream(ply,"cpthazama/mgr/music/" .. trkName .. "_phase2.mp3",2)
 			ply.VJ_MGR_StartedTracks = true
+
+			if startPoint == false then
+				startPoint = 0
+			end
+			if endPoint == false then
+				endPoint = ply.VJ_MGR_LastTrackLength
+			end
+			if isnumber(startPoint) then
+				self.MGR_Music_StartPoint = startPoint
+				self:SetStartPoint(startPoint)
+			end
+			if isnumber(endPoint) then
+				self.MGR_Music_EndPoint = endPoint
+				self:SetEndPoint(endPoint)
+			end
 		end
 
 		function VJ_MGR_OnCreatedAudioStream(channel,ply,trkID)
 			if trkID == 1 then
 				ply.VJ_MGR_CurrentTrackChannelP1 = channel
+				ply.VJ_MGR_LastTrackLength = channel:GetLength()
 			elseif trkID == 2 then
 				ply.VJ_MGR_CurrentTrackChannelP2 = channel
 			end

@@ -43,83 +43,8 @@ function ENT:SetPhase(i)
 	self:SetNW2Int("Phase",i)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-local debug = false
-local doEntPos = true
---
-function ENT:StartDamageCalc(dmg)
-	local wep = self:GetNW2Entity("Weapon")
-	if !IsValid(wep) then return end
-	self.TraceCalcData = {}
-	self.EntitiesToDamage = {}
-	self.PreviousCurTime = 0
-	
-	local hookName = "VJ_MGR_TraceAttackData_" .. self:EntIndex()
-	hook.Add("Think",hookName,function()
-		if !IsValid(self) or !IsValid(wep) then
-			hook.Remove("Think",hookName)
-			return
-		end
-		for v = 1,wep:GetBoneCount() -1 do
-			local targetPos = self.TraceCalcData[v] && self.TraceCalcData[v][self.PreviousCurTime] && self.TraceCalcData[v][self.PreviousCurTime].LastPos or wep:GetBonePosition(v)
-			targetPos.z = doEntPos && IsValid(self:GetEnemy()) && self:GetEnemy():WorldSpaceCenter().z or targetPos.z
-			local tr = util.TraceHull({
-				start = wep:GetBonePosition(v),
-				endpos = targetPos,
-				filter = {self,wep},
-				mins = Vector(-5,-5,-5),
-				maxs = Vector(5,5,5)
-			})
-			local tr2 = util.TraceHull({
-				start = tr.HitPos,
-				endpos = self:WorldSpaceCenter(),
-				filter = {self,wep},
-				mins = Vector(-5,-5,-5),
-				maxs = Vector(5,5,5)
-			})
-			local ent = tr.Entity
-			local originalData = tr
-			if !IsValid(ent) then
-				ent = tr2.Entity
-				tr = tr2
-			end
-			self.PreviousCurTime = CurTime()
-			self.TraceCalcData[v] = {}
-			self.TraceCalcData[v][self.PreviousCurTime] = {
-				LastPos = wep:GetBonePosition(v),
-				Pos = tr.HitPos,
-				Ent = ent,
-				Mat = tr.MatType,
-				Normal = tr.HitNormal,
-				HitGroup = tr.HitGroup
-			}
-			if debug then
-				local ang = (tr.HitPos -tr.StartPos):Angle()
-				VJ_CreateTestObject(originalData.HitPos, ang, Color(255,0,0), 3)
-				VJ_CreateTestObject(tr.HitPos, ang, Color(255,0,242), 3)
-			end
-			if tr.Hit && IsValid(ent) && self:DoRelationshipCheck(ent) == true && !VJ_HasValue(self.EntitiesToDamage,ent) then
-				table.insert(self.EntitiesToDamage,ent)
-				self:DealDamage(dmg,ent,tr)
-			end
-		end
-	end)
-end
----------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:EndDamageCalc()
-	self.TraceCalcData = nil
-	self.LastCalcData = nil
-	self.PreviousCurTime = nil
-	hook.Remove("Think","VJ_MGR_TraceAttackData_" .. self:EntIndex())
-end
----------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:DealDamage(dmg,ent,tr)
-	local dmginfo = DamageInfo()
-	dmginfo:SetDamage(dmg or 1)
-	dmginfo:SetDamagePosition(istable(tr) && tr.HitPos or tr)
-	dmginfo:SetDamageType(DMG_SLASH)
-	dmginfo:SetAttacker(self)
-	dmginfo:SetInflictor(self)
-	ent:TakeDamageInfo(dmginfo)
+function ENT:DoCalcDamage(ent,tr)
+	self:VJ_MGR_DealDamage(ent,{dmg=350,dmgtype=DMG_SLASH,dmgpos=istable(tr) && tr.HitPos or nil})
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnAcceptInput(key,activator,caller,data)
@@ -132,24 +57,6 @@ function ENT:CustomOnAcceptInput(key,activator,caller,data)
 	if self.DoEvents then
 		self:DoEvents(key)
 	end
-end
----------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:GetAttackNames(ent)
-	if ent.MeleeAttacking or ent.IsAttacking or ent.Attacking or ent.RangeAttacking then return true end
-	local tbl = {"melee","attack","range","atk"}
-	local filter = {"idle","walk","run"}
-	local seq = ent:GetSequenceName(ent:GetSequence())
-	for _,v in pairs(tbl) do
-		if string.find(seq,v) then
-			for _,k in pairs(filter) do
-				if string.find(seq,k) then
-					return false
-				end
-			end
-			return true
-		end
-	end
-	return false
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnThink()
@@ -194,7 +101,7 @@ function ENT:CustomOnThink()
 			if key_atk or !IsValid(cont) && dist <= self.MeleeAttackDistance && !self.Attacking && self:CheckCanSee(ent,55) then
 				self:Attack()
 			end
-			if self:GetAttackNames(ent) && dist <= 350 && math.random(1,4) == 1 then
+			if VJ_MGR_GetAttackNames(ent) && dist <= 350 && math.random(1,4) == 1 then
 				self:Dodge()
 			end
 		end

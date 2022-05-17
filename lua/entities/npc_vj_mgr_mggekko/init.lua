@@ -9,7 +9,7 @@ ENT.Model = {"models/cpthazama/mgr/gekko.mdl"}
 ENT.StartHealth = 1000
 ENT.HullType = HULL_LARGE
 
-ENT.VJ_NPC_Class = {"CLASS_MG_PMC"}
+ENT.VJ_NPC_Class = {"CLASS_MG_DESPERADO"}
 
 ENT.MaxJumpLegalDistance = VJ_Set(1500, 2500)
 

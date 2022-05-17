@@ -11,6 +11,8 @@ ENT.HullType = HULL_LARGE
 ENT.TurningSpeed = 5
 ENT.VJ_IsHugeMonster = true
 
+ENT.MaxJumpLegalDistance = VJ_Set(6500, 7500)
+
 ENT.VJ_NPC_Class = {"CLASS_MG_DESPERADO"}
 
 ENT.Bleeds = false
@@ -22,7 +24,7 @@ ENT.HasMeleeAttack = false
 ENT.MeleeAttackDistance = 100
 ENT.AnimTbl_MeleeAttack = nil
 ENT.TimeUntilMeleeAttackDamage = false
-ENT.DisableDefaultMeleeAttackDamageCode = true
+ENT.DisableDefaultMeleeAttackCode = true
 
 ENT.AttackProps = false
 
@@ -52,6 +54,7 @@ ENT.SoundTbl_LaserImpact = {
 RAY_SET_LASER = 2026
 RAY_SET_LASER_DOUBLE = 2020
 RAY_SET_LASER_END = 2030
+RAY_SET_MELEE_DOUBLE_SWIPE = 2400
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnInitialize()
 	self:SetCollisionBounds(Vector(50,50,700),Vector(-50,-50,0))
@@ -80,6 +83,7 @@ function ENT:CustomOnInitialize()
 		self:DeleteOnRemove(glow1)
 	end
 
+	self:SetBlade(false)
 	self:SetPhase(1)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -88,23 +92,15 @@ function ENT:SetPhase(i)
 	self:SetNW2Int("Phase",i)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:DealDamage(dmg,ent,tr)
-	local dmginfo = DamageInfo()
-	dmginfo:SetDamage(dmg or 1)
-	dmginfo:SetDamagePosition(tr)
-	dmginfo:SetDamageType(DMG_SLASH)
-	dmginfo:SetAttacker(self)
-	dmginfo:SetInflictor(self)
-	ent:TakeDamageInfo(dmginfo)
-end
----------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnAcceptInput(key,activator,caller,data)
 	print(key)
 	if key == "step_left" then
 		local pos,ang = self:GetBonePosition(self:LookupBone("bone032"))
+		self:VJ_MGR_DealDamage(pos,{dmg=250,dmgtype=DMG_CRUSH,dmgpos=pos,vis=true},75)
 		sound.Play(VJ_PICK(self.SoundTbl_FootStep),pos,100,100)
 	elseif key == "step_right" then
 		local pos,ang = self:GetBonePosition(self:LookupBone("bone043"))
+		self:VJ_MGR_DealDamage(pos,{dmg=250,dmgtype=DMG_CRUSH,dmgpos=pos,vis=true},75)
 		sound.Play(VJ_PICK(self.SoundTbl_FootStep),pos,100,100)
 	elseif key == "roar_start" then
 		-- VJ_CreateSound(self,"cpthazama/mgr/mgray/em0200_se_atk_laser_charge 876434145.ogg",100)
@@ -124,6 +120,22 @@ function ENT:CustomOnAcceptInput(key,activator,caller,data)
 		self.LaserLoop:Stop()
 		self:StopParticles()
 		VJ_CreateSound(self,"cpthazama/mgr/mgray/em0200_se_atk_laser_fire_end 583701465.ogg",100)
+	elseif key == "melee blade" then
+		local pos1,ang1 = self:GetBonePosition(self:LookupBone("bone530"))
+		local pos2,ang2 = self:GetBonePosition(self:LookupBone("bone541"))
+		local pos = (pos2 +pos1) /2
+		local c = VJ_CreateTestObject(pos,nil,nil,nil,"models/hunter/misc/sphere025x025.mdl")
+		c:SetModelScale(100)
+
+		self:VJ_MGR_DealDamage(pos,{dmg=350,dmgtype=bit.bor(DMG_SLASH,DMG_BURN,DMG_CRUSH,DMG_DIRECT),dmgpos=pos,vis=true},400)
+	elseif key == "blade_open" then
+		VJ_CreateSound(self,"cpthazama/mgr/mgray/arm_open.ogg",100)
+	elseif key == "blade_close" then
+		VJ_CreateSound(self,"cpthazama/mgr/mgray/arm_close.ogg",100)
+	elseif key == "blade_appear" then
+		self:SetBlade(true)
+	elseif key == "blade_disappear" then
+		self:SetBlade(false)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -180,12 +192,32 @@ function ENT:DoSequence(set)
         end,
         default = function()
             MsgC(Color(255, 0, 0), string.format("**Unknown Sequence Set ID: %d\n", set))
-        end
+        end,
+        [RAY_SET_MELEE_DOUBLE_SWIPE] = function()
+			self:SetState(VJ_STATE_ONLY_ANIMATION_NOATTACK)
+			self:VJ_ACT_PLAYACTIVITY("2400",true,false,false,0,{OnFinish=function(interrupted,anim)
+				if interrupted then return end
+				self:VJ_ACT_PLAYACTIVITY("2401",true,false,false,0,{OnFinish=function(interrupted,anim)
+					if interrupted then return end
+					self:VJ_ACT_PLAYACTIVITY("2402",true,false,false,0,{OnFinish=function(interrupted,anim)
+						if interrupted then return end
+						self:SetState()
+					end})
+				end})
+			end})
+        end,
+        default = function()
+            MsgC(Color(255, 0, 0), string.format("**Unknown Sequence Set ID: %d\n", set))
+        end,
     })
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+local math_rad = math.rad
+local math_cos = math.cos
+--
 function ENT:CustomAttack(ene, eneVisible)
 	local dist = self.NearestPointToEnemyDistance
+	local inFront = (self.LastEnemySightDiff > math_cos(math_rad(40)))
 	local notBusy = !self:IsBusy() && self:GetState() == VJ_STATE_NONE
 	local cont = self.VJ_TheController
 	local valCont = IsValid(cont)
@@ -209,7 +241,13 @@ function ENT:CustomAttack(ene, eneVisible)
 		if #dTbl <= 0 then
 			dTbl = 1
 		end
-		self:Dodge(dTbl)
+		self:VJ_MGR_Dodge(dTbl)
+	end
+
+	if key_atk then
+		if notBusy then
+			self:DoSequence(RAY_SET_MELEE_DOUBLE_SWIPE)
+		end
 	end
 
 	if key_atk2 then
@@ -227,8 +265,12 @@ function ENT:CustomAttack(ene, eneVisible)
 
 	if valCont then return end
 
-	if CurTime() > self.NextLaserAttackT && dist <= 1800 && dist > 400 && math.random(1,20) == 1 && notBusy && eneVisible then
+	if CurTime() > self.NextLaserAttackT && dist <= 4000 && dist > 600 && math.random(1,20) == 1 && notBusy && eneVisible && inFront then
 		self:DoSequence(math.random(1,3) == 1 && RAY_SET_LASER or RAY_SET_LASER_DOUBLE)
+	end
+
+	if notBusy && dist <= 1000 && dist > 400 && eneVisible && inFront then
+		self:DoSequence(RAY_SET_MELEE_DOUBLE_SWIPE)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -249,11 +291,13 @@ function ENT:CustomOnThink()
 			mins = Vector(-16,-16,-16),
 			maxs = Vector(16,16,16),
 		})
-		util.ParticleTracerEx("vj_mgr_ray_laser", att.Pos, tr.HitPos, false, self:EntIndex(), 2)
-		ParticleEffect("vj_mgr_ray_laser_impact", tr.HitPos, Angle())
-		sound.Play(VJ_PICK(self.SoundTbl_LaserImpact),tr.HitPos,100,100)
-		util.Decal("Scorch",tr.HitPos +tr.HitNormal,tr.HitPos -tr.HitNormal)
-		util.VJ_SphereDamage(self,self,tr.HitPos,350,45,bit.bor(DMG_BLAST,DMG_BURN,DMG_ENERGYBEAM),false,false,{DisableVisibilityCheck=false,Force=15})
+		local hitpos = tr.HitPos
+		util.ParticleTracerEx("vj_mgr_ray_laser", att.Pos, hitpos, false, self:EntIndex(), 2)
+		ParticleEffect("vj_mgr_ray_laser_impact", hitpos, Angle())
+		sound.Play(VJ_PICK(self.SoundTbl_LaserImpact),hitpos,100,100)
+		sound.EmitHint(SOUND_DANGER,hitpos,500,1,self)
+		util.Decal("Scorch",hitpos +tr.HitNormal,hitpos -tr.HitNormal)
+		util.VJ_SphereDamage(self,self,hitpos,350,45,bit.bor(DMG_BLAST,DMG_BURN,DMG_ENERGYBEAM),false,false,{DisableVisibilityCheck=false,Force=15})
 
 		if IsValid(cont) && cont:KeyDown(IN_ATTACK2) && self:GetActivity() == ACT_IDLE_ANGRY then
 			self.RandomStopLaserT = CurTime() +0.25 -- Allows continuous firing until they let go
@@ -269,44 +313,6 @@ function ENT:CustomOnThink()
 	self:VJ_MGR_UniqueMovement()
 
 	self.LastActivity = self:GetActivity()
-end
----------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:Dodge(forceSide)
-	if self:IsBusy() then return end
-	local myPos = self:GetPos()
-	local myPosCentered = self:GetPos() +self:OBBCenter()
-	local positions = {}
-	local anims = self.AnimTbl_Dodge
-	for i = 1,#anims do
-		positions[i] = i == 1 && -self:GetForward() or i == 2 && self:GetRight() or i == 3 && -self:GetRight() or i == 4 && self:GetForward()
-	end
-	local isGood = {}
-	for i = 1,#positions do
-		local tr = util.TraceLine({
-			start = myPosCentered,
-			endpos = myPosCentered +positions[i] *300,
-			filter = self
-		})
-		if !tr.Hit then
-			table.insert(isGood,i)
-		end
-	end
-	if #isGood <= 0 then
-		isGood = {4}
-	end
-	local side = forceSide or VJ_PICK(isGood)
-	if istable(side) then side = VJ_PICK(side) end
-	self:VJ_ACT_PLAYACTIVITY(anims[side],true,false,true)
-
-	local snd = VJ_PICK(self.SoundTbl_Dodge)
-	local dur = SoundDuration(snd)
-
-	self.Attacking = false
-	self:StopAllCommonSpeechSounds()
-	self.NextAlertSoundT = CurTime() +dur +math.Rand(1,2)
-	self.NextInvestigateSoundT = CurTime() +dur +math.Rand(3,4)
-	self.NextIdleSoundT_RegularChange = CurTime()  +dur +math.Rand(3,4)
-	VJ_CreateSound(self,snd,78)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnTakeDamage_OnBleed(dmginfo, hitgroup)

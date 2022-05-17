@@ -13,9 +13,18 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Int",0,"HP")
 	self:NetworkVar("Int",1,"StartPoint")
 	self:NetworkVar("Int",2,"EndPoint")
+	self:NetworkVar("Bool",0,"Blade")
 end
 
 if CLIENT then
+    local vec0 = Vector(0,0,0)
+    local vec1 = Vector(1,1,1)
+    function ENT:CustomOnDraw()
+        for i = 48,70 do
+            self:ManipulateBoneScale(i,self:GetBlade() && vec1 or vec0)
+        end
+    end
+
     function ENT:Initialize()
         VJ_MGR_HPBar(self)
         VJ_MGR_AddBossTrack(self,"mg_ray",15,134.8)

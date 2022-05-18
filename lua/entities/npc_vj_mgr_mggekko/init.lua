@@ -47,6 +47,9 @@ end
 function ENT:CustomOnInitialize()
 	self.CollisionBounds = Vector(27,27,190)
 	self:SetCollisionBounds(self.CollisionBounds,Vector(-self.CollisionBounds.x,-self.CollisionBounds.y,0))
+	if self.OnInit then
+		self:OnInit()
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnAcceptInput(key,activator,caller,data)

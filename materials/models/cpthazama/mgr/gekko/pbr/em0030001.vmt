@@ -1,0 +1,15 @@
+"PBR"
+{
+    "$basetexture"                  "models/cpthazama/mgr/gekko/em0030001"
+    "$bumpmap"                      "models/cpthazama/mgr/gekko/em0030001_n"
+    "$mraotexture"                  "models/cpthazama/mgr/gekko/pbr/em0030001_mrao"
+
+    "$parallax"                     "1"
+    "$parallaxdepth"                "0.445"
+    "$model"                        "1"
+    "$nodecal"                      "1"
+    "$useenvambient"                "1"
+    "$normalmapalphaenvmapmask"     "1"
+
+    "$lightwarptexture"			    "models/cpthazama/mgr/warp2"
+}

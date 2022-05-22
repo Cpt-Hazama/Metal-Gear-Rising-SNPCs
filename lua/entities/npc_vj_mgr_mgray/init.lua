@@ -190,9 +190,6 @@ function ENT:DoSequence(set)
 				self.AnimTbl_IdleStand = {ACT_IDLE}
 			end})
         end,
-        default = function()
-            MsgC(Color(255, 0, 0), string.format("**Unknown Sequence Set ID: %d\n", set))
-        end,
         [RAY_SET_MELEE_DOUBLE_SWIPE] = function()
 			self:SetState(VJ_STATE_ONLY_ANIMATION_NOATTACK)
 			self:VJ_ACT_PLAYACTIVITY("2400",true,false,false,0,{OnFinish=function(interrupted,anim)

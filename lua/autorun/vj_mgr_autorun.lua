@@ -45,6 +45,7 @@ if VJExists == true then
 	VJ.AddNPC("Metal Gear EXCELSUS","npc_vj_mgr_mgexcelsus",vCat)
 
 	VJ.AddParticle("particles/vj_mgr_ray.pcf", {})
+	VJ.AddParticle("particles/vj_mgr_monsoon.pcf", {})
 
 	VJ.AddClientConVar("vj_mgr_mus_vol",70,"Music Volume")
 

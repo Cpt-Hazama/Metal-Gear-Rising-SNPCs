@@ -1,0 +1,17 @@
+"SpriteCard"
+{
+	"$basetexture" 	"mgr/particle/spark_monsoon"
+	"$vertexalpha" 	"1"
+	"$vertexcolor" 	"1"
+	"$translucent" 	"1"
+	"$overbrightfactor" "15"
+	"Proxies"
+	{
+		"AnimatedTexture"
+		{
+			"animatedtexturevar" "$basetexture"
+			"animatedtextureframenumvar" "$frame"
+			"animatedtextureframerate" 20
+		}
+	}
+}

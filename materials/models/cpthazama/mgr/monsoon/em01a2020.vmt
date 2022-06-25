@@ -1,0 +1,10 @@
+"VertexLitGeneric"
+{
+    "$basetexture"              "models/cpthazama/mgr/monsoon/em01a2020"
+	"$bumpmap"					"models/cpthazama/mgr/flat"
+
+	"$nodecal"					"1"
+	// "$nocull"					"1"
+	"$translucent"				"1"
+	"$model"					"1"
+}

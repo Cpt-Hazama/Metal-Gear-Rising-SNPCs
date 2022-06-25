@@ -1,0 +1,17 @@
+"PBR"
+{
+    "$basetexture"              "models/cpthazama/mgr/monsoon/em01a2014"
+	"$bumpmap"					"models/cpthazama/mgr/monsoon/em01a2014_n"
+	"$mraotexture"				"models/cpthazama/mgr/monsoon/em01a2014_mrao"
+
+	"$nodecal"					"1"
+	"$nocull"					"1"
+	"$model"					"1"
+
+	"$surfaceprop"      		"metal"
+
+	"$envmap"           		"env_cubemap"
+    "$envmapfresnel"            "1"
+	"$useenvambient"			"1"
+	"$normalmapalphaenvmapmask" "1"
+}

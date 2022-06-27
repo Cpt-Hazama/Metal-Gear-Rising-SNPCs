@@ -1,0 +1,16 @@
+"PBR"
+{
+    "$basetexture"              "models/cpthazama/mgr/armstrong/em0700030"
+	"$bumpmap"					"models/cpthazama/mgr/armstrong/em0700030_n"
+	"$mraotexture"				"models/cpthazama/mgr/mrao_invert"
+
+	"$nodecal"					"1"
+	"$nocull"					"1"
+	"$model"					"1"
+
+	"$surfaceprop"      		"metal"
+
+	"$envmap"           		"models/cpthazama/mgr/fallout4cube_dithered_grey"
+    "$envmapfresnel"            "1"
+	"$normalmapalphaenvmapmask" "1"
+}

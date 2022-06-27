@@ -2,7 +2,7 @@
 {
     "$basetexture"              "models/cpthazama/mgr/monsoon/em01a2014"
 	"$bumpmap"					"models/cpthazama/mgr/monsoon/em01a2014_n"
-	"$mraotexture"				"models/cpthazama/mgr/monsoon/em01a2014_mrao"
+	// "$mraotexture"				"models/cpthazama/mgr/monsoon/em01a2014_mrao"
 
 	"$nodecal"					"1"
 	"$nocull"					"1"

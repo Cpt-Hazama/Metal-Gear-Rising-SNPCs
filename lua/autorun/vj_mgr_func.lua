@@ -9,9 +9,83 @@ if VJExists == true then
 	end
 
 	if SERVER then
+		util.AddNetworkString("VJ_MGR_Followers")
+
 		local NPC = FindMetaTable("NPC")
 		local debug = false
 		local doEntPos = false
+
+		local specialDmgEnts = {npc_strider=true, npc_combinedropship=true, npc_combinegunship=true, npc_helicopter=true}
+		--
+		function VJ_MGR_SphereDamage(attacker, inflictor, startPos, dmgRadius, dmgMax, dmgType, ignoreInnocents, realisticRadius, extraOptions, customFunc)
+			startPos = startPos or attacker:GetPos()
+			dmgRadius = dmgRadius or 150
+			dmgMax = dmgMax or 15
+			extraOptions = extraOptions or {}
+				local disableVisibilityCheck = extraOptions.DisableVisibilityCheck or false
+				local baseForce = extraOptions.Force or false
+			local dmgFinal = dmgMax
+			local hitEnts = {}
+			for _,v in pairs((isnumber(extraOptions.UseConeDegree) and VJ_FindInCone(startPos, extraOptions.UseConeDirection or attacker:GetForward(), dmgRadius, extraOptions.UseConeDegree or 90, {AllEntities=true})) or ents.FindInSphere(startPos, dmgRadius)) do
+				if (attacker.VJ_IsBeingControlled == true && attacker.VJ_TheControllerBullseye == v) or (v:IsPlayer() && v.IsControlingNPC == true) then continue end -- Don't damage controller bullseye and player
+				local nearestPos = v:NearestPoint(startPos) -- From the enemy position to the given position
+				if realisticRadius != false then -- Decrease damage from the nearest point all the way to the enemy point then clamp it!
+					dmgFinal = math_clamp(dmgFinal * ((dmgRadius - startPos:Distance(nearestPos)) + 150) / dmgRadius, dmgMax / 2, dmgFinal)
+				end
+				
+				if (disableVisibilityCheck == false && (v:VisibleVec(startPos) or v:Visible(attacker))) or (disableVisibilityCheck == true) then
+					local function DoDamageCode()
+						local canHit = true
+						if (customFunc) then
+							canHit = customFunc(v)
+						end
+						if !canHit then return end
+						hitEnts[#hitEnts + 1] = v
+						if specialDmgEnts[v:GetClass()] then
+							v:TakeDamage(dmgFinal, attacker, inflictor)
+						else
+							local dmgInfo = DamageInfo()
+							dmgInfo:SetDamage(dmgFinal)
+							dmgInfo:SetAttacker(attacker)
+							dmgInfo:SetInflictor(inflictor)
+							dmgInfo:SetDamageType(dmgType or DMG_BLAST)
+							dmgInfo:SetDamagePosition(nearestPos)
+							if baseForce != false then
+								local force = baseForce
+								local forceUp = extraOptions.UpForce or false
+								if VJ_IsProp(v) or v:GetClass() == "prop_ragdoll" then
+									local phys = v:GetPhysicsObject()
+									if IsValid(phys) then
+										if forceUp == false then forceUp = force / 9.4 end
+										//v:SetVelocity(v:GetUp()*100000)
+										if v:GetClass() == "prop_ragdoll" then force = force * 1.5 end
+										phys:ApplyForceCenter(((v:GetPos() + v:OBBCenter() + v:GetUp() * forceUp) - startPos) * force) //+attacker:GetForward()*vForcePropPhysics
+									end
+								else
+									force = force * 1.2
+									if forceUp == false then forceUp = force end
+									dmgInfo:SetDamageForce(((v:GetPos() + v:OBBCenter() + v:GetUp() * forceUp) - startPos) * force)
+								end
+							end
+							v:TakeDamageInfo(dmgInfo)
+							VJ_DestroyCombineTurret(attacker, v)
+						end
+					end
+					
+					-- Self
+					if v:EntIndex() == attacker:EntIndex() then
+						if extraOptions.DamageAttacker then DoDamageCode() end -- If it can't self hit, then skip
+					-- NPCs / Players
+					elseif (ignoreInnocents == false) or (v:IsNPC() && v:Disposition(attacker) != D_LI && v:Health() > 0 && (v:GetClass() != attacker:GetClass())) or (v:IsPlayer() && GetConVar("ai_ignoreplayers"):GetInt() == 0 && v:Alive() && !v:IsFlagSet(FL_NOTARGET)) then
+						DoDamageCode()
+					-- Other types of entities
+					elseif !v:IsNPC() && !v:IsPlayer() then
+						DoDamageCode()
+					end
+				end
+			end
+			return hitEnts
+		end
 
 		function NPC:VJ_MGR_Dodge(forceSide)
 			if self:IsBusy() then return end
@@ -191,7 +265,7 @@ if VJExists == true then
 			local tbEnts = {}
 			if radius then
 				for _,v in ipairs(ents.FindInSphere(ent,radius)) do
-					if v != self && self:DoRelationshipCheck(v) then
+					if v != self && !v:IsFlagSet(FL_NOTARGET) && self:DoRelationshipCheck(v) then
 						if dmgtbl.vis && !v:Visible(self) then continue end
 						table.insert(tbEnts,v)
 						local dmginfo = DamageInfo()
@@ -218,6 +292,15 @@ if VJExists == true then
 	end
 
 	if CLIENT then
+		net.Receive("VJ_MGR_Followers",function(len,ply)
+			local ent = net.ReadEntity()
+			local tbl = net.ReadTable()
+
+			if IsValid(ent) then
+				ent.BoneFollowers = tbl
+			end
+		end)
+
 		surface.CreateFont("MGR_Font", {
 			font = "Techno Hideo",
 			size = 18,

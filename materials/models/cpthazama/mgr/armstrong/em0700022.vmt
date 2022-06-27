@@ -1,0 +1,27 @@
+"VertexLitGeneric"
+{
+    "$basetexture"              "models/cpthazama/mgr/armstrong/em0700022"
+	"$bumpmap"					"models/cpthazama/mgr/armstrong/em0700022_n"
+	"$phongexponenttexture"     "vj_base/exponent"
+
+    "$selfillum"                "1"
+    "$selfillummask"            "models/cpthazama/mgr/armstrong/em0700022_g"
+    "$selfillumtint"            "[5 5 5]"
+
+	"$nodecal"					"1"
+	"$nocull"					"1"
+	"$model"					"1"
+	"$halflambert"              "1"
+
+	"$surfaceprop"      		"flesh"
+
+    "$ambientocclusion"         "1"
+    "$phong"                    "1"
+    "$phongboost"               "3"
+    "$phongfresnelranges"       "[1 1.15 1.75]"
+    "$phongalbedotint"          "1"
+
+    "$envmap"                   "models/cpthazama/mgr/eye-reflection-cubemap-"
+    "$envmapfresnel"            "1"
+    "$envmaptint"               "[0.00115 0.00115 0.00115]"
+}

@@ -43,6 +43,10 @@ function ENT:SetPhase(i)
 	self:SetNW2Int("Phase",i)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetPhase()
+	return self:GetNW2Int("Phase",1)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoCalcDamage(ent,tr)
 	self:VJ_MGR_DealDamage(ent,{dmg=350,dmgtype=DMG_SLASH,dmgpos=istable(tr) && tr.HitPos or nil})
 end
@@ -218,6 +222,10 @@ function ENT:CustomOnTakeDamage_OnBleed(dmginfo, hitgroup)
 
 	if dmg >= 95 && !isBSDamage && self:GetState() == VJ_STATE_NONE && math.random(1,4) == 1 then
 		self:Stun()
+	end
+
+	if self.OnBleed then
+		self:OnBleed(dmginfo, hitgroup)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------

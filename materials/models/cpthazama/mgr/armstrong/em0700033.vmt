@@ -1,0 +1,17 @@
+"PBR"
+{
+    "$basetexture"              "models/cpthazama/mgr/armstrong/em0700033"
+	"$bumpmap"					"models/cpthazama/mgr/armstrong/em0700022_n"
+	"$emissivetexture"			"models/cpthazama/mgr/armstrong/em0700033_g"
+	"$mraotexture"				"models/cpthazama/mgr/mrao_invert"
+
+	"$nodecal"					"1"
+	"$nocull"					"1"
+	"$model"					"1"
+
+	"$surfaceprop"      		"metal"
+
+	"$envmap"           		"models/cpthazama/mgr/eye-reflection-cubemap-"
+    "$envmapfresnel"            "1"
+	"$normalmapalphaenvmapmask" "1"
+}

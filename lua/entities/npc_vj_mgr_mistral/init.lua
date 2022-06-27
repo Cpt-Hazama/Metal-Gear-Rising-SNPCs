@@ -268,9 +268,19 @@ function ENT:DoEvents(key)
 		if !util.IsInWorld(pos) then
 			pos = self:GetPos()
 		end
+		self.SaveAng = self:GetAttachment(self:LookupAttachment("eyes")).Ang
 		self.SavePos = pos
 	elseif key == "dodge_sendpos" then
 		self:SetPos(self.SavePos)
+		local ply = self.VJ_TheController
+		if IsValid(ply) then
+			local ang = ply:EyeAngles()
+			local ang2 = self:GetAngles()
+			ang[2] = self.SaveAng[2]
+			ang2[2] = self.SaveAng[2]
+			self:SetAngles(ang2)
+			ply:SetEyeAngles(ang)
+		end
 	elseif key == "melee" then
 		local myPos = self:GetPos()
 		local hitRegistered = false

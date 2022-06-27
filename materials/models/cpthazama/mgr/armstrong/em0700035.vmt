@@ -1,0 +1,15 @@
+"PBR"
+{
+    "$basetexture"              "models/cpthazama/mgr/armstrong/em0700035"
+	"$bumpmap"					"models/cpthazama/mgr/armstrong/em0700035_n"
+
+	"$nodecal"					"1"
+	"$nocull"					"1"
+	"$model"					"1"
+
+	"$surfaceprop"      		"metal"
+
+	"$envmap"           		"env_cubemap"
+    "$envmapfresnel"            "1"
+	"$normalmapalphaenvmapmask" "1"
+}

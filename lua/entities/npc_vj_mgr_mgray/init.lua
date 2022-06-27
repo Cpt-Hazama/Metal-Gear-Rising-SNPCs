@@ -8,7 +8,7 @@ include('shared.lua')
 ENT.Model = {"models/cpthazama/mgr/mg_ray.mdl"}
 ENT.StartHealth = 8000
 ENT.HullType = HULL_LARGE
-ENT.TurningSpeed = 5
+ENT.TurningSpeed = 4
 ENT.VJ_IsHugeMonster = true
 
 ENT.MaxJumpLegalDistance = VJ_Set(6500, 7500)
@@ -59,7 +59,12 @@ RAY_SET_MELEE_DOUBLE_SWIPE = 2400
 function ENT:CustomOnInitialize()
 	self:SetCollisionBounds(Vector(50,50,700),Vector(-50,-50,0))
 	-- self:SetCollisionBounds(Vector(1,1,700),Vector(-1,-1,0))
-	-- VJ_CreateBoneFollower(self)
+	self.BoneFollowerParent = VJ_CreateBoneFollower(self)
+	self.BoneFollowers = self.BoneFollowerParent.BoneFollowers
+	net.Start("VJ_MGR_Followers")
+		net.WriteEntity(self)
+		net.WriteTable(self.BoneFollowers)
+	net.Broadcast()
 
 	self.LaserLoop = CreateSound(self,"cpthazama/mgr/mgray/em0200_se_atk_laser_loop.wav")
 	self.LaserLoop:SetSoundLevel(140)
@@ -124,8 +129,8 @@ function ENT:CustomOnAcceptInput(key,activator,caller,data)
 		local pos1,ang1 = self:GetBonePosition(self:LookupBone("bone530"))
 		local pos2,ang2 = self:GetBonePosition(self:LookupBone("bone541"))
 		local pos = (pos2 +pos1) /2
-		local c = VJ_CreateTestObject(pos,nil,nil,nil,"models/hunter/misc/sphere025x025.mdl")
-		c:SetModelScale(100)
+		-- local c = VJ_CreateTestObject(pos,nil,nil,nil,"models/hunter/misc/sphere025x025.mdl")
+		-- c:SetModelScale(100)
 
 		self:VJ_MGR_DealDamage(pos,{dmg=350,dmgtype=bit.bor(DMG_SLASH,DMG_BURN,DMG_CRUSH,DMG_DIRECT),dmgpos=pos,vis=true},400)
 	elseif key == "blade_open" then
@@ -280,11 +285,13 @@ function ENT:CustomOnThink()
 	self:SetHP(self:Health())
 
 	if self.LaserActive then
+		local tbl = self.BoneFollowers
+		table.insert(tbl,self)
 		local att = self:GetAttachment(2)
 		local tr = util.TraceHull({
 			start = att.Pos,
 			endpos = att.Pos +att.Ang:Forward() *32000,
-			filter = self,
+			filter = tbl,
 			mins = Vector(-16,-16,-16),
 			maxs = Vector(16,16,16),
 		})
@@ -294,7 +301,9 @@ function ENT:CustomOnThink()
 		sound.Play(VJ_PICK(self.SoundTbl_LaserImpact),hitpos,100,100)
 		sound.EmitHint(SOUND_DANGER,hitpos,500,1,self)
 		util.Decal("Scorch",hitpos +tr.HitNormal,hitpos -tr.HitNormal)
-		util.VJ_SphereDamage(self,self,hitpos,350,45,bit.bor(DMG_BLAST,DMG_BURN,DMG_ENERGYBEAM),false,false,{DisableVisibilityCheck=false,Force=15})
+		VJ_MGR_SphereDamage(self,self,hitpos,350,45,bit.bor(DMG_BLAST,DMG_BURN,DMG_ENERGYBEAM),false,false,{DisableVisibilityCheck=false,Force=15},function(v)
+			if v:IsFlagSet(FL_NOTARGET) then return false end
+		end)
 
 		if IsValid(cont) && cont:KeyDown(IN_ATTACK2) && self:GetActivity() == ACT_IDLE_ANGRY then
 			self.RandomStopLaserT = CurTime() +0.25 -- Allows continuous firing until they let go

@@ -5,107 +5,146 @@ include('shared.lua')
 	No parts of this code or any of its contents may be reproduced,copied,modified or adapted,
 	without the prior written consent of the author,unless otherwise indicated for stand-alone materials.
 -----------------------------------------------*/
-ENT.Model = {"models/humans/group01/male_01.mdl","models/humans/group01/male_03.mdl","models/humans/group02/male_01.mdl","models/humans/group02/male_03.mdl"} -- The game will pick a random model from the table when the SNPC is spawned | Add as many as you want
-ENT.StartHealth = 60
-ENT.HullType = HULL_HUMAN
+ENT.Model = {"models/cpthazama/mgr/armstrong.mdl"}
+ENT.StartHealth = 10000
+ENT.HullType = HULL_LARGE
+
+ENT.VJ_NPC_Class = {"CLASS_MG_DESPERADO","CLASS_MG_WORLDMARSHALL","CLASS_UNITED_STATES"}
 
 ENT.BloodColor = "Red"
 
-ENT.VJ_NPC_Class = {"CLASS_BRONX"}
+ENT.HasMeleeAttack = false
+ENT.MeleeAttackDistance = 100
+ENT.AnimTbl_MeleeAttack = nil
+ENT.TimeUntilMeleeAttackDamage = false
+ENT.DisableDefaultMeleeAttackDamageCode = true
 
-ENT.HasMeleeAttack = true
-ENT.AnimTbl_MeleeAttack = {"throw1"}
-ENT.TimeUntilMeleeAttackDamage = 0.3
-ENT.MeleeAttackDistance = 50
-ENT.MeleeAttackDamageDistance = 80
-ENT.MeleeAttackDamage = 5
+ENT.AttackProps = false
 
-ENT.HasExtraMeleeAttackSounds = true
-
-ENT.GeneralSoundPitch1 = 80
-ENT.GeneralSoundPitch2 = 90
-
-ENT.SoundTbl_Idle = {
-	"cpthazama/bronx/did_you_say.wav",
-	"cpthazama/bronx/do_something.wav",
-	"cpthazama/bronx/eat_a_dick.wav",
-	"cpthazama/bronx/punkass.wav"
+ENT.AnimTbl_Movements = {
+	[1] = {Start = "0010",Loop = {ACT_WALK}, End = "0012", ReqIdle = {ACT_IDLE}, GoalMax = 1.2, GoalMin = 0.2},
+	[3] = {Start = "0020",Loop = {ACT_RUN}, End = "0022", ReqIdle = {ACT_IDLE,ACT_WALK}, GoalMax = 0.21, GoalMin = 0},
 }
-ENT.SoundTbl_Alert = ENT.SoundTbl_Idle
-ENT.SoundTbl_MeleeAttackExtra = {"weapons/knife/knife_hit1.wav","weapons/knife/knife_hit2.wav","weapons/knife/knife_hit3.wav","weapons/knife/knife_hit4.wav"}
-ENT.SoundTbl_MeleeAttackMiss = {"weapons/iceaxe/iceaxe_swing1.wav"}
+
+ENT.DisableFootStepSoundTimer = true
+ENT.GeneralSoundPitch1 = 100
+ENT.GeneralSoundPitch2 = 100
+
+ENT.SoundTbl_FootStep = {}
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:CustomOnInitialize()
-	local weps = {
-		"models/weapons/w_crowbar.mdl",
-		"models/props_canal/mattpipe.mdl",
-		"models/weapons/w_knife_ct.mdl"
-	}
-	local n = ents.Create("prop_vj_animatable")
-	n:SetModel(VJ_PICK(weps))
-	n:SetPos(self:GetPos())
-	n:SetAngles(self:GetAngles())
-	n:Spawn()
-	n:SetCollisionGroup(COLLISION_GROUP_IN_VEHICLE)
-	n:SetOwner(self)
-	n:SetParent(self)
-	n:AddEffects(EF_BONEMERGE)
-	self:DeleteOnRemove(n)
+function ENT:OnInit()
+	self:SetPhase(1)
+
+	self.BoneData = {}
+	self.NanoMachinesDead = false
 
 	local n = ents.Create("prop_vj_animatable")
 	n:SetModel(self:GetModel())
 	n:SetPos(self:GetPos())
 	n:SetAngles(self:GetAngles())
 	n:Spawn()
+	n:SetSolid(SOLID_NONE)
 	n:SetCollisionGroup(COLLISION_GROUP_IN_VEHICLE)
 	n:SetOwner(self)
 	n:SetParent(self)
 	n:AddEffects(EF_BONEMERGE)
-	n:SetMaterial("models/player/shared/gold_player")
+	n:SetSkin(1)
+	n:SetBodygroup(2,1)
 	self:DeleteOnRemove(n)
 	self.Nano = n
-
 	self:EffectNano(false)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:CustomOnThink()
-	self.AnimationPlaybackRate = self:IsMoving() && 2 or 5
-	if self:IsMoving() then
-		self:SetVelocity(self:GetMoveVelocity() *5)
+function ENT:CustomOnAcceptInput(key,activator,caller,data)
+	if key == "step" then
+		VJ_EmitSound(self,self.SoundTbl_FootStep,75,math.random(90,110))
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+local vec0 = Vector(0,0,0)
+local vec1 = Vector(1.025,1.025,1.025)
+--
 function ENT:EffectNano(boneID,reset)
 	local n = self.Nano
 	if !IsValid(n) then return end
 
 	if boneID == false then
+		table.Empty(self.BoneData)
 		for i = 1,n:GetBoneCount() -1 do -- Initialize
-			n:ManipulateBoneScale(i,Vector(0,0,0))
+			n:ManipulateBoneScale(i,vec0)
 		end
 	elseif reset == true then
-		n:ManipulateBoneScale(boneID,Vector(0,0,0))
+		-- table.remove(self.BoneData,boneID)
+		-- n:ManipulateBoneScale(boneID,vec0)
+		self.BoneData[boneID] = self.BoneData[boneID] or {}
+		self.BoneData[boneID].CurrentValue = self.BoneData[boneID].CurrentValue or vec1
+		self.BoneData[boneID].TargetValue = vec0
 	else
-		n:ManipulateBoneScale(boneID,Vector(1.1,1.1,1.1))
+		self.BoneData[boneID] = self.BoneData[boneID] or {}
+		self.BoneData[boneID].CurrentValue = self.BoneData[boneID].CurrentValue or vec0
+		self.BoneData[boneID].TargetValue = vec1
+		self.BoneData[boneID].ResetTime = CurTime() +2.5
+		-- n:ManipulateBoneScale(boneID,vec1)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:CustomOnTakeDamage_BeforeDamage(dmginfo, hitgroup)
-	local dmgpos = dmginfo:GetDamagePosition()
-	local lastBone = false
-	local lastDist = 999999999
-	for i = 1,self:GetBoneCount() -1 do
-		local bonepos,boneang = self:GetBonePosition(i)
-		local dist = bonepos:Distance(dmgpos)
-		if dist <= lastDist then
-			lastDist = dist
-			lastBone = i
+function ENT:CustomThink(ent,dist,cont,key_atk,key_for,key_bac,key_lef,key_rig,key_jum,isMoving)
+	local n = self.Nano
+	if IsValid(n) && self.BoneData then
+		local FT = FrameTime() *18
+		for id,v in pairs(self.BoneData) do
+			if v.ResetTime < CurTime() then
+				self:EffectNano(id,true)
+			end
+			v.CurrentValue = LerpVector(FT,v.CurrentValue,v.TargetValue)
+			n:ManipulateBoneScale(id,v.CurrentValue)
 		end
 	end
-	
-	if lastBone != false then
-		self:EffectNano(lastBone)
-		local dmg = dmginfo:GetDamage()
-		dmginfo:SetDamage(math.Clamp(dmg *0.05,1,dmg))
+	self:VJ_MGR_UniqueMovement()
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CustomOnTakeDamage_BeforeDamage(dmginfo, hitgroup)
+	if self.NanoMachinesDead == false then
+		local dmgpos = dmginfo:GetDamagePosition()
+		local lastBone = false
+		local lastDist = 999999999
+		for i = 1,self:GetBoneCount() -1 do
+			local bonepos,boneang = self:GetBonePosition(i)
+			local dist = bonepos:Distance(dmgpos)
+			if dist <= lastDist then
+				lastDist = dist
+				lastBone = i
+			end
+		end
+
+		if lastBone != false then
+			self:EffectNano(lastBone)
+			for _,v in pairs(self:GetChildBones(lastBone)) do
+				self:EffectNano(v)
+			end
+			for i = 1,math.random(2,4) do
+				lastBone = self:GetBoneParent(lastBone)
+				self:EffectNano(lastBone)
+			end
+
+			local dmg = dmginfo:GetDamage()
+			dmginfo:SetDamage(math.Clamp(dmg *0.05,1,dmg))
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnBleed(dmginfo, hitgroup)
+	local phase = self:GetPhase()
+	if self:Health() <= self:GetMaxHealth() *0.95 && phase == 1 then
+		self:SetPhase(2)
+	elseif self:Health() <= self:GetMaxHealth() *0.35 && phase == 2 then
+		self:SetPhase(3)
+	end
+
+	if self.NanoMachinesDead then return end
+	if self:Health() <= self:GetMaxHealth() *0.05 then
+		self:EffectNano(false)
+		self.Nano:Remove()
+		self.NanoMachinesDead = true
 	end
 end

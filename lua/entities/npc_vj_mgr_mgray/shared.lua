@@ -19,9 +19,12 @@ end
 if CLIENT then
     local vec0 = Vector(0,0,0)
     local vec1 = Vector(1,1,1)
+    local target = vec0
     function ENT:CustomOnDraw()
-        for i = 48,70 do
-            self:ManipulateBoneScale(i,self:GetBlade() && vec1 or vec0)
+        local blade = self:GetBlade()
+        target = LerpVector(FrameTime() *10,target,blade && vec1 or vec0)
+        for i = 49,70 do
+            self:ManipulateBoneScale(i,target)
         end
     end
 
@@ -30,8 +33,16 @@ if CLIENT then
         VJ_MGR_AddBossTrack(self,"mg_ray",15,134.8)
     end
 
-    function ENT:ControllerViewOverride(ply, origin, angles, fov)
-        local pos, ang = origin, angles
+    local tabVal = table.HasValue
+    function ENT:FilterCallback(ent,ply,camera)
+        local ignoreEnts = {ply, camera, self, ply.VJ_BoneFollowerEntity}
+        if ent:GetClass() == "phys_bone_follower" or tabVal(ignoreEnts,ent) then
+            return false
+        end
+        return true
+    end
+
+    function ENT:Controller_CalcView(ply, pos, ang, fov, origin, angles, cameraMode)
 		local camera = ply.VJCE_Camera -- Camera entity
         if ply.VJC_Camera_Mode == 2 then -- First person
             local setPos = self:EyePos() + self:GetForward()*20
@@ -56,8 +67,10 @@ if CLIENT then
             local startPos = self:GetPos() +self:GetUp() *(self:OBBMaxs().z *1.1)
             local tr = util.TraceHull({
                 start = startPos,
-                endpos = startPos + angles:Forward()*-camera.Zoom + (self:GetForward()*offset.x + self:GetRight()*offset.y + self:GetUp()*offset.z),
-                filter = {ply, camera, self, ply.VJ_BoneFollowerEntity},
+                endpos = startPos + angles:Forward()*-(camera.Zoom *4) + (self:GetForward()*offset.x + self:GetRight()*offset.y + self:GetUp()*(offset.z *0.5)),
+                filter = function(ent)
+                    self:FilterCallback(ent,ply,camera)
+                end,
                 mins = Vector(-5, -5, -5),
                 maxs = Vector(5, 5, 5),
                 mask = MASK_SHOT,
@@ -65,6 +78,6 @@ if CLIENT then
             pos = tr.HitPos + tr.HitNormal*2
         end
 
-        return pos, ang, fov
+        return {origin = pos, angles = ang, fov = fov}
     end
 end

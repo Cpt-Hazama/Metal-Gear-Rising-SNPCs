@@ -41,6 +41,9 @@ end
 function ENT:SetPhase(i)
 	self.Phase = i
 	self:SetNW2Int("Phase",i)
+	if self.OnChangePhase then
+		self:OnChangePhase(i)
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetPhase()

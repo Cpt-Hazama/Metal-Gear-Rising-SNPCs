@@ -46,6 +46,7 @@ if VJExists == true then
 
 	VJ.AddParticle("particles/vj_mgr_ray.pcf", {})
 	VJ.AddParticle("particles/vj_mgr_monsoon.pcf", {})
+	VJ.AddParticle("particles/vj_mgr_armstrong.pcf", {})
 
 	VJ.AddClientConVar("vj_mgr_mus_vol",70,"Music Volume")
 

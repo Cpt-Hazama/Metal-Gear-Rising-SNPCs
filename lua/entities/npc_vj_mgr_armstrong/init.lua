@@ -23,7 +23,7 @@ ENT.AttackProps = false
 
 ENT.AnimTbl_Movements = {
 	[1] = {Start = "0010",Loop = {ACT_WALK}, End = "0012", ReqIdle = {ACT_IDLE}, GoalMax = 1.2, GoalMin = 0.2},
-	[3] = {Start = "0020",Loop = {ACT_RUN}, End = "0022", ReqIdle = {ACT_IDLE,ACT_WALK}, GoalMax = 0.21, GoalMin = 0},
+	[3] = {Start = "0030",Loop = {ACT_RUN}, End = "0031", ReqIdle = {ACT_IDLE,ACT_WALK}, GoalMax = 0.21, GoalMin = 0},
 }
 
 ENT.DisableFootStepSoundTimer = true
@@ -39,7 +39,7 @@ function ENT:OnInit()
 	self.NanoMachinesDead = false
 
 	local n = ents.Create("prop_vj_animatable")
-	n:SetModel(self:GetModel())
+	n:SetModel("models/cpthazama/mgr/armstrong_particles.mdl")
 	n:SetPos(self:GetPos())
 	n:SetAngles(self:GetAngles())
 	n:Spawn()
@@ -49,7 +49,8 @@ function ENT:OnInit()
 	n:SetParent(self)
 	n:AddEffects(EF_BONEMERGE)
 	n:SetSkin(1)
-	n:SetBodygroup(2,1)
+	n:SetBodygroup(4,1)
+	n:SetBodygroup(6,1)
 	self:DeleteOnRemove(n)
 	self.Nano = n
 	self:EffectNano(false)
@@ -61,8 +62,37 @@ function ENT:CustomOnAcceptInput(key,activator,caller,data)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnChangePhase(phase)
+	if phase == 1 then
+		self:SetSkin(0)
+	elseif phase == 2 then
+		self:SetSkin(0)
+		self:SetBodygroup(4,1)
+		self:SetBodygroup(6,1)
+		self:SetBodygroup(7,1)
+	elseif phase == 3 then
+		local n = ents.Create("prop_vj_animatable")
+		n:SetModel("models/cpthazama/mgr/armstrong_particles.mdl")
+		n:SetPos(self:GetPos())
+		n:SetAngles(self:GetAngles())
+		n:Spawn()
+		n:SetSolid(SOLID_NONE)
+		n:SetCollisionGroup(COLLISION_GROUP_IN_VEHICLE)
+		n:SetOwner(self)
+		n:SetParent(self)
+		n:SetNoDraw(true)
+		n:AddEffects(EF_BONEMERGE)
+		self:DeleteOnRemove(n)
+		self.ParticleMesh = n
+
+		self:SetSkin(2)
+
+		ParticleEffectAttach("vj_mgr_armstrong_smoke",PATTACH_POINT_FOLLOW,n,0)
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 local vec0 = Vector(0,0,0)
-local vec1 = Vector(1.025,1.025,1.025)
+local vec1 = Vector(1.065,1.1,1.065)
 --
 function ENT:EffectNano(boneID,reset)
 	local n = self.Nano
